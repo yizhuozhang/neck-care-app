@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 吃豆人测试</title>
+    <style>
+        body {
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 3px solid #FFD700;
+            background: #000;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 吃豆人游戏测试</h1>
+    <canvas id="gameCanvas" width="380" height="400"></canvas>
+    <div>
+        <button onclick="startGame()">开始游戏</button>
+        <button onclick="resetGame()">重置</button>
+    </div>
+    <p>得分：<span id="score">0</span></p>
+    <p>使用方向键控制</p>
+
+    <script>
+        const CONFIG = {
+            gridWidth: 19,
+            gridHeight: 20,
+            cellSize: 20,
+            pacmanSpeed: 0.15,
+            ghostSpeed: 0.08
+        };
+
+        const MAZE = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+            [1,3,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,3,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,1,1,2,1,2,1,1,1,0,1,1,1,1],
+            [2,2,2,1,0,1,2,2,2,2,2,2,2,1,0,1,2,2,2],
+            [1,1,1,1,0,1,2,1,1,4,1,1,2,1,0,1,1,1,1],
+            [2,2,2,2,0,2,2,1,4,4,4,1,2,2,0,2,2,2,2],
+            [1,1,1,1,0,1,2,1,1,1,1,1,2,1,0,1,1,1,1],
+            [2,2,2,1,0,1,2,2,2,2,2,2,2,1,0,1,2,2,2],
+            [1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,3,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,3,1],
+            [1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let gameState = {
+            running: false,
+            score: 0,
+            maze: [],
+            dots: [],
+            powerUps: [],
+            pacman: { x: 9, y: 16, direction: 'none', mouthOpen: 0 },
+            ghosts: []
+        };
+
+        let canvas, ctx, animationId;
+
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            CONFIG.cellSize = canvas.width / CONFIG.gridWidth;
+            console.log('Cell size:', CONFIG.cellSize);
+            initGame();
+            drawGame();
+        }
+
+        function initGame() {
+            gameState.maze = MAZE.map(row => [...row]);
+            gameState.dots = [];
+            gameState.powerUps = [];
+
+            for (let y = 0; y < gameState.maze.length; y++) {
+                for (let x = 0; x < gameState.maze[y].length; x++) {
+                    if (gameState.maze[y][x] === 0) {
+                        gameState.dots.push({ x, y });
+                    } else if (gameState.maze[y][x] === 3) {
+                        gameState.powerUps.push({ x, y });
+                    }
+                }
+            }
+
+            gameState.ghosts = [
+                { x: 9, y: 9, color: '#FF0000' },
+                { x: 8, y: 9, color: '#FFB8FF' },
+                { x: 10, y: 9, color: '#00FFFF' },
+                { x: 9, y: 8, color: '#FFB852' }
+            ];
+
+            gameState.pacman = { x: 9, y: 16, direction: 'none', mouthOpen: 0 };
+            gameState.score = 0;
+            updateScore();
+        }
+
+        function startGame() {
+            if (gameState.running) return;
+            gameState.running = true;
+            gameLoop();
+        }
+
+        function resetGame() {
+            gameState.running = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            initGame();
+            drawGame();
+        }
+
+        function isWall(x, y) {
+            const gx = Math.round(x);
+            const gy = Math.round(y);
+            if (gy < 0 || gy >= CONFIG.gridHeight || gx < 0 || gx >= CONFIG.gridWidth) return true;
+            return gameState.maze[gy][gx] === 1;
+        }
+
+        function updatePacman() {
+            const pm = gameState.pacman;
+            if (pm.direction === 'none') return;
+
+            let newX = pm.x;
+            let newY = pm.y;
+
+            switch(pm.direction) {
+                case 'left': newX -= CONFIG.pacmanSpeed; break;
+                case 'right': newX += CONFIG.pacmanSpeed; break;
+                case 'up': newY -= CONFIG.pacmanSpeed; break;
+                case 'down': newY += CONFIG.pacmanSpeed; break;
+            }
+
+            const nextGx = Math.round(newX);
+            const nextGy = Math.round(newY);
+
+            if (!isWall(nextGx, nextGy)) {
+                if (newX < -0.5) newX = CONFIG.gridWidth - 1;
+                if (newX >= CONFIG.gridWidth - 0.5) newX = 0;
+                pm.x = newX;
+                pm.y = newY;
+            } else {
+                pm.x = Math.round(pm.x);
+                pm.y = Math.round(pm.y);
+            }
+
+            // 吃豆子
+            const gx = Math.round(pm.x);
+            const gy = Math.round(pm.y);
+            gameState.dots = gameState.dots.filter(dot => {
+                if (dot.x === gx && dot.y === gy) {
+                    gameState.score += 10;
+                    updateScore();
+                    return false;
+                }
+                return true;
+            });
+
+            pm.mouthOpen += 0.1;
+            if (pm.mouthOpen > 1) pm.mouthOpen = 0;
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = gameState.score;
+        }
+
+        function drawGame() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cs = CONFIG.cellSize;
+
+            // 墙壁
+            for (let y = 0; y < CONFIG.gridHeight; y++) {
+                for (let x = 0; x < CONFIG.gridWidth; x++) {
+                    if (gameState.maze[y][x] === 1) {
+                        ctx.fillStyle = '#2121de';
+                        ctx.fillRect(x * cs, y * cs, cs, cs);
+                        ctx.strokeStyle = '#5555ff';
+                        ctx.strokeRect(x * cs + 2, y * cs + 2, cs - 4, cs - 4);
+                    }
+                }
+            }
+
+            // 豆子
+            gameState.dots.forEach(dot => {
+                ctx.fillStyle = '#FFB897';
+                ctx.beginPath();
+                ctx.arc(dot.x * cs + cs/2, dot.y * cs + cs/2, cs/6, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 能量豆
+            gameState.powerUps.forEach(p => {
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(p.x * cs + cs/2, p.y * cs + cs/2, cs/3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 吃豆人
+            const pm = gameState.pacman;
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            const mouth = pm.mouthOpen * 0.3;
+            let start = 0.2 + mouth;
+            let end = 1.8 - mouth;
+            if (pm.direction === 'left') { start = 2.2 + mouth; end = 3.8 - mouth; }
+            if (pm.direction === 'up') { start = 2.7 + mouth; end = 4.3 - mouth; }
+            if (pm.direction === 'down') { start = 1.7 + mouth; end = 3.3 - mouth; }
+            ctx.arc(pm.x * cs + cs/2, pm.y * cs + cs/2, cs/2 - 2, start * Math.PI, end * Math.PI);
+            ctx.lineTo(pm.x * cs + cs/2, pm.y * cs + cs/2);
+            ctx.fill();
+
+            // 幽灵
+            gameState.ghosts.forEach(g => {
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(g.x * cs + cs/2, g.y * cs + cs/2, cs/2 - 2, Math.PI, 0);
+                ctx.lineTo(g.x * cs + cs, g.y * cs + cs);
+                ctx.lineTo(g.x * cs, g.y * cs + cs);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(g.x * cs + cs/3, g.y * cs + cs/2, cs/8, 0, Math.PI * 2);
+                ctx.arc(g.x * cs + 2*cs/3, g.y * cs + cs/2, cs/8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function gameLoop() {
+            if (!gameState.running) return;
+            updatePacman();
+            drawGame();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            const pm = gameState.pacman;
+            if (e.key === 'ArrowLeft') pm.direction = 'left';
+            if (e.key === 'ArrowRight') pm.direction = 'right';
+            if (e.key === 'ArrowUp') pm.direction = 'up';
+            if (e.key === 'ArrowDown') pm.direction = 'down';
+        });
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

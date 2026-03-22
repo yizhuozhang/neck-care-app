@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <title>🦒 颈椎呵护助手 - 手机版</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .container {
+            max-width: 100%;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 15px;
+            padding: 10px;
+        }
+
+        header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+
+        .video-panel, .stats-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            flex: 1;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        .status-dot.active {
+            background: #4CAF50;
+        }
+
+        .status-dot.warning {
+            background: #FF9800;
+        }
+
+        .status-dot.danger {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 8px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            font-size: 0.75em;
+            opacity: 0.9;
+        }
+
+        .angle-display {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .angle-display h3 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .angle-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .angle-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .angle-label {
+            width: 65px;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.85em;
+        }
+
+        .angle-progress {
+            flex: 1;
+            height: 16px;
+            background: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .angle-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+        }
+
+        .angle-value {
+            width: 45px;
+            text-align: right;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 0.85em;
+        }
+
+        .center-zone {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 40%;
+            height: 100%;
+            background: rgba(76, 175, 80, 0.3);
+            transform: translateX(-50%);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 3px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:active {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .exercises {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+
+        .exercises h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+        }
+
+        .exercise-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 600px) {
+            .exercise-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .exercise-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .exercise-item h4 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .exercise-item p {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .alert-box {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px 20px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            width: 320px;
+        }
+
+        .alert-box.show {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-50%, -50%) rotate(-5deg); }
+            75% { transform: translate(-50%, -50%) rotate(5deg); }
+        }
+
+        .alert-box h2 {
+            color: #f44336;
+            margin-bottom: 12px;
+            font-size: 1.4em;
+        }
+
+        .alert-box p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        .timer-display {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 480px) {
+            .timer-display {
+                font-size: 1.5em;
+            }
+        }
+
+        .tips {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .tips h4 {
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .tips ul {
+            color: #856404;
+            padding-left: 18px;
+        }
+
+        .tips li {
+            margin-bottom: 4px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦒 颈椎呵护助手</h1>
+            <p>通过人脸旋转检测，提醒您活动颈椎，缓解办公疲劳</p>
+        </header>
+
+        <div class="main-content">
+            <div class="video-panel">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">点击"启动摄像头"开始</span>
+                </div>
+
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary" id="startBtn" onclick="startCamera()">
+                        📷 启动摄像头
+                    </button>
+                    <button class="btn-secondary" id="resetBtn" onclick="resetStats()">
+                        🔄 重置统计
+                    </button>
+                    <button class="btn-danger" id="stopBtn" onclick="stopCamera()" disabled>
+                        ⏹ 停止
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="angle-display">
+                    <h3 style="margin-bottom: 15px; color: #667eea;">📐 头部角度实时监测</h3>
+                    <div class="angle-bars">
+                        <div class="angle-bar">
+                            <span class="angle-label">左右旋转</span>
+                            <div class="angle-progress">
+                                <div class="center-zone"></div>
+                                <div class="angle-fill" id="yawFill" style="width: 50%;"></div>
+                            </div>
+                            <span class="angle-value" id="yawValue">0°</span>
+                        </div>
+                        <div class="angle-bar">
+                            <span class="angle-label">上下倾斜</span>
+                            <div class="angle-progress">
+                                <div class="center-zone"></div>
+                                <div class="angle-fill" id="pitchFill" style="width: 50%;"></div>
+                            </div>
+                            <span class="angle-value" id="pitchValue">0°</span>
+                        </div>
+                        <div class="angle-bar">
+                            <span class="angle-label">侧倾角度</span>
+                            <div class="angle-progress">
+                                <div class="center-zone"></div>
+                                <div class="angle-fill" id="rollFill" style="width: 50%;"></div>
+                            </div>
+                            <span class="angle-value" id="rollValue">0°</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="sessionTime">00:00</div>
+                        <div class="stat-label">⏱ 使用时长</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="movementCount">0</div>
+                        <div class="stat-label">🔄 活动次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="staticTime">0</div>
+                        <div class="stat-label">⚠ 静止时长 (分)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="alertCount">0</div>
+                        <div class="stat-label">🔔 提醒次数</div>
+                    </div>
+                </div>
+
+                <div class="timer-display" id="countdownTimer"></div>
+            </div>
+        </div>
+
+        <div class="exercises">
+            <h3>🧘 颈椎放松练习</h3>
+            <div class="exercise-list">
+                <div class="exercise-item">
+                    <h4>左右转头</h4>
+                    <p>缓慢向左向右转头，每侧保持 5 秒，重复 5 次</p>
+                </div>
+                <div class="exercise-item">
+                    <h4>上下点头</h4>
+                    <p>缓慢低头和仰头，每个方向保持 5 秒，重复 5 次</p>
+                </div>
+                <div class="exercise-item">
+                    <h4>侧向拉伸</h4>
+                    <p>耳朵向肩膀靠近，每侧保持 10 秒，重复 3 次</p>
+                </div>
+                <div class="exercise-item">
+                    <h4>绕环运动</h4>
+                    <p>缓慢做颈部绕环，顺时针和逆时针各 5 圈</p>
+                </div>
+                <div class="exercise-item">
+                    <h4>肩部放松</h4>
+                    <p>耸肩并绕环，向前向后各 10 次</p>
+                </div>
+                <div class="exercise-item">
+                    <h4>下巴回收</h4>
+                    <p>收下巴向后推，保持 5 秒，重复 10 次</p>
+                </div>
+            </div>
+
+            <div class="tips">
+                <h4>💡 健康提示</h4>
+                <ul>
+                    <li>每工作 30-45 分钟，起身活动 5 分钟</li>
+                    <li>保持屏幕与眼睛平齐，避免低头</li>
+                    <li>调整椅子高度，保持正确坐姿</li>
+                    <li>多喝水，促进新陈代谢</li>
+                    <li>如感到持续疼痛，请及时就医</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="alert-box" id="alertBox">
+        <h2>⚠ 该活动颈椎了！</h2>
+        <p>您已经保持同一姿势超过 <span id="staticMinutes">5</span> 分钟</p>
+        <div class="timer-display" id="breakTimer">00:30</div>
+        <p>请起身活动，做做颈椎放松练习</p>
+        <button class="btn-primary" onclick="dismissAlert()">我知道了</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+        // 全局变量
+        let video, canvas, ctx;
+        let isRunning = false;
+        let animationId;
+        let sessionStartTime;
+        let lastMovementTime;
+        let staticWarningTime = 5 * 60 * 1000; // 5 分钟
+        let alertShown = false;
+        let stats = {
+            movementCount: 0,
+            staticTime: 0,
+            alertCount: 0,
+            lastAngles: { yaw: 0, pitch: 0, roll: 0 }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            
+            // 加载 face-api 模型
+            loadModels();
+        });
+
+        async function loadModels() {
+            updateStatus('loading', '正在加载人脸检测模型...');
+            
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('model/');
+                updateStatus('ready', '模型加载完成，点击启动摄像头');
+            } catch (error) {
+                console.error('模型加载失败:', error);
+                updateStatus('error', '模型加载失败，请刷新页面重试');
+            }
+        }
+
+        async function startCamera() {
+            try {
+                // 优先使用前置摄像头（手机）
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'  // 前置摄像头
+                    }
+                });
+                
+                video.srcObject = stream;
+                await new Promise(resolve => {
+                    video.onloadedmetadata = resolve;
+                });
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                isRunning = true;
+                sessionStartTime = Date.now();
+                lastMovementTime = Date.now();
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                
+                updateStatus('active', '摄像头运行中 - 请保持面部在画面中');
+                detectFace();
+                startTimer();
+                
+            } catch (error) {
+                console.error('摄像头启动失败:', error);
+                updateStatus('error', '无法访问摄像头，请检查权限设置');
+            }
+        }
+
+        function stopCamera() {
+            isRunning = false;
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            updateStatus('stopped', '已停止');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        async function detectFace() {
+            if (!isRunning) return;
+            
+            try {
+                const detections = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks();
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (detections) {
+                    // 绘制人脸检测框
+                    const box = detections.detection.box;
+                    ctx.strokeStyle = '#667eea';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(box.x, box.y, box.width, box.height);
+                    
+                    // 绘制人脸特征点
+                    faceapi.draw.drawFaceLandmarks(canvas, detections);
+                    
+                    // 计算头部姿态角度
+                    const angles = calculateHeadPose(detections.landmarks);
+                    updateAngleDisplay(angles);
+                    checkMovement(angles);
+                    
+                    updateStatus('active', '✅ 人脸检测中');
+                } else {
+                    updateStatus('warning', '未检测到人脸，请调整位置');
+                }
+            } catch (error) {
+                console.error('检测失败:', error);
+            }
+            
+            animationId = requestAnimationFrame(detectFace);
+        }
+
+        function calculateHeadPose(landmarks) {
+            // 简化版头部姿态估算
+            const nose = landmarks.getNose();
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const mouth = landmarks.getMouth();
+            
+            // 计算 Yaw (左右旋转)
+            const noseTip = nose[6];
+            const noseBase = nose[0];
+            const yaw = (noseTip.x - noseBase.x) / 10;
+            
+            // 计算 Pitch (上下倾斜)
+            const pitch = (noseTip.y - noseBase.y) / 10;
+            
+            // 计算 Roll (侧倾)
+            const leftEyeCenter = leftEye.reduce((acc, p) => ({
+                x: acc.x + p.x / leftEye.length,
+                y: acc.y + p.y / leftEye.length
+            }), { x: 0, y: 0 });
+            
+            const rightEyeCenter = rightEye.reduce((acc, p) => ({
+                x: acc.x + p.x / rightEye.length,
+                y: acc.y + p.y / rightEye.length
+            }), { x: 0, y: 0 });
+            
+            const roll = Math.atan2(
+                rightEyeCenter.y - leftEyeCenter.y,
+                rightEyeCenter.x - leftEyeCenter.x
+            ) * 180 / Math.PI;
+            
+            return {
+                yaw: Math.max(-30, Math.min(30, yaw)),
+                pitch: Math.max(-30, Math.min(30, pitch)),
+                roll: Math.max(-30, Math.min(30, roll))
+            };
+        }
+
+        function updateAngleDisplay(angles) {
+            const yawFill = document.getElementById('yawFill');
+            const yawValue = document.getElementById('yawValue');
+            const pitchFill = document.getElementById('pitchFill');
+            const pitchValue = document.getElementById('pitchValue');
+            const rollFill = document.getElementById('rollFill');
+            const rollValue = document.getElementById('rollValue');
+            
+            // 归一化到 0-100%
+            const normalize = (value) => ((value + 30) / 60) * 100;
+            
+            yawFill.style.width = `${normalize(angles.yaw)}%`;
+            yawValue.textContent = `${angles.yaw.toFixed(1)}°`;
+            
+            pitchFill.style.width = `${normalize(angles.pitch)}%`;
+            pitchValue.textContent = `${angles.pitch.toFixed(1)}°`;
+            
+            rollFill.style.width = `${normalize(angles.roll)}%`;
+            rollValue.textContent = `${angles.roll.toFixed(1)}°`;
+        }
+
+        function checkMovement(angles) {
+            const threshold = 5; // 角度变化阈值
+            
+            const yawDiff = Math.abs(angles.yaw - stats.lastAngles.yaw);
+            const pitchDiff = Math.abs(angles.pitch - stats.lastAngles.pitch);
+            const rollDiff = Math.abs(angles.roll - stats.lastAngles.roll);
+            
+            if (yawDiff > threshold || pitchDiff > threshold || rollDiff > threshold) {
+                stats.movementCount++;
+                lastMovementTime = Date.now();
+                stats.staticTime = 0;
+                document.getElementById('movementCount').textContent = stats.movementCount;
+                
+                if (alertShown) {
+                    dismissAlert();
+                }
+            }
+            
+            // 检查静止时间
+            const staticDuration = Date.now() - lastMovementTime;
+            stats.staticTime = Math.floor(staticDuration / 60000);
+            document.getElementById('staticTime').textContent = stats.staticTime;
+            
+            // 显示警告
+            if (staticDuration >= staticWarningTime && !alertShown) {
+                showAlert();
+            }
+            
+            stats.lastAngles = angles;
+        }
+
+        function showAlert() {
+            alertShown = true;
+            stats.alertCount++;
+            document.getElementById('alertCount').textContent = stats.alertCount;
+            document.getElementById('staticMinutes').textContent = stats.staticTime;
+            
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('alertBox').classList.add('show');
+            
+            // 30 秒倒计时
+            let seconds = 30;
+            const breakTimer = document.getElementById('breakTimer');
+            const timerInterval = setInterval(() => {
+                seconds--;
+                breakTimer.textContent = `00:${seconds.toString().padStart(2, '0')}`;
+                
+                if (seconds <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        }
+
+        function dismissAlert() {
+            alertShown = false;
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('alertBox').classList.remove('show');
+            lastMovementTime = Date.now();
+        }
+
+        function startTimer() {
+            const timerElement = document.getElementById('sessionTime');
+            
+            setInterval(() => {
+                if (!isRunning) return;
+                
+                const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                
+                timerElement.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function resetStats() {
+            stats = {
+                movementCount: 0,
+                staticTime: 0,
+                alertCount: 0,
+                lastAngles: { yaw: 0, pitch: 0, roll: 0 }
+            };
+            
+            document.getElementById('movementCount').textContent = '0';
+            document.getElementById('staticTime').textContent = '0';
+            document.getElementById('alertCount').textContent = '0';
+            document.getElementById('sessionTime').textContent = '00:00';
+            document.getElementById('countdownTimer').textContent = '';
+            
+            sessionStartTime = Date.now();
+            lastMovementTime = Date.now();
+        }
+
+        function updateStatus(status, text) {
+            const dot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            
+            dot.className = 'status-dot';
+            
+            switch (status) {
+                case 'active':
+                    dot.classList.add('active');
+                    break;
+                case 'warning':
+                    dot.classList.add('warning');
+                    break;
+                case 'error':
+                    dot.classList.add('danger');
+                    break;
+                case 'loading':
+                case 'ready':
+                case 'stopped':
+                default:
+                    break;
+            }
+            
+            statusText.textContent = text;
+        }
+
+        // 页面关闭时清理
+        window.addEventListener('beforeunload', () => {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FFD700">
+    <title>🎮 豆子迷宫颈椎大冒险</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            color: #fff;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: clamp(1.1em, 4.8vw, 1.5em);
+            color: #FFD700;
+            text-shadow: 3px 3px 0 #000;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+
+        .lang-switch {
+            position: absolute;
+            right: 0;
+            top: 0;
+            border: 2px solid #FFD700;
+            background: rgba(255, 215, 0, 0.15);
+            color: #FFD700;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.7em;
+            cursor: pointer;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        @media (min-width: 768px) {
+            .game-container {
+                flex-direction: row;
+            }
+        }
+
+        .left-panel, .right-panel {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .video-section {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            border: 3px solid #FFD700;
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .control-hint {
+            background: rgba(255,215,0,0.2);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .control-hint p {
+            font-size: 0.75em;
+            color: #FFD700;
+            line-height: 1.6;
+        }
+
+        .game-board {
+            background: #000;
+            border: 3px solid #2121de;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #fff;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            position: relative;
+        }
+
+        button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: 2px solid #2e7d32;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            color: white;
+            border: 2px solid #c62828;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: 2px solid #1565C0;
+        }
+
+        .btn-exercise {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            color: white;
+            border: 2px solid #6A1B9A;
+            grid-column: span 2;
+        }
+
+        .power-ups {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .power-ups h3 {
+            color: #FFD700;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .power-up-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .power-up-item {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .power-up-item.earned {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .alert-overlay.show {
+            display: flex;
+        }
+
+        .alert-box {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 4px solid #FFD700;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px #FFD700; }
+            50% { box-shadow: 0 0 40px #FFD700; }
+        }
+
+        .alert-box h2 {
+            color: #FFD700;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .alert-box p {
+            color: #fff;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .exercise-timer {
+            font-size: 3em;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .ghost-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .ghost {
+            width: 50px;
+            height: 60px;
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .tips {
+            background: rgba(255, 193, 7, 0.2);
+            border: 2px solid #FFC107;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .tips h4 {
+            color: #FFC107;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .tips ul {
+            color: #fff;
+            padding-left: 18px;
+            font-size: 0.75em;
+            line-height: 1.8;
+        }
+
+        .direction-indicator {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            max-width: 150px;
+            margin: 10px auto;
+        }
+
+        .dir-cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+
+        .dir-cell.active {
+            background: #FFD700;
+            color: #000;
+        }
+
+        .dir-cell.center {
+            background: rgba(255,215,0,0.3);
+        }
+
+        /* 无敌倒计时进度条 */
+        #powerModeBar {
+            display: none;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #FFD700;
+            height: 18px;
+        }
+
+        #powerModeBar.active {
+            display: block;
+        }
+
+        #powerModeBarFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f0ff, #FFD700);
+            border-radius: 6px;
+            transition: width 0.1s linear;
+        }
+
+        #powerModeLabel {
+            text-align: center;
+            font-size: 0.65em;
+            color: #FFD700;
+            margin-bottom: 2px;
+            display: none;
+            letter-spacing: 1px;
+        }
+
+        #powerModeLabel.active {
+            display: block;
+        }
+
+        /* 浮动得分 */
+        .floating-score {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 1px 1px 0 #000;
+            pointer-events: none;
+            animation: floatUp 0.9s ease-out forwards;
+            z-index: 10;
+        }
+
+        @keyframes floatUp {
+            0%   { opacity: 1; transform: translateY(0) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+        }
+
+        /* 能量豆闪烁 */
+        @keyframes powerDotPulse {
+            0%, 100% { opacity: 1;   transform: scale(1); }
+            50%       { opacity: 0.3; transform: scale(0.6); }
+        }
+
+        @media (max-width: 767px) {
+            body { padding: 8px; }
+            .left-panel, .right-panel { padding: 12px; }
+            .game-container { gap: 10px; }
+            button { padding: 14px 10px; font-size: 0.9em; }
+            #gameCanvas { max-width: 100%; }
+            .stats-grid { gap: 8px; }
+            .stat-value { font-size: 1.25em; }
+            .stat-label { font-size: 0.65em; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="lang-switch" id="langBtn" onclick="toggleLanguage()">EN</button>
+        <h1 id="titleText">🎮 吃豆人颈椎大冒险</h1>
+        <p id="subtitleText">用你的脸控制吃豆人，吃掉豆子，躲避幽灵！</p>
+    </header>
+
+    <div class="game-container">
+        <div class="left-panel">
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                
+                <div class="control-hint">
+                    <p id="hintLeft">🎯 <strong>向左看</strong> → 吃豆人向左移动</p>
+                    <p id="hintRight">🎯 <strong>向右看</strong> → 吃豆人向右移动</p>
+                    <p id="hintUp">🎯 <strong>向上看</strong> → 吃豆人向上移动</p>
+                    <p id="hintDown">🎯 <strong>向下看</strong> → 吃豆人向下移动</p>
+                </div>
+
+                <div class="direction-indicator">
+                    <div class="dir-cell" id="dir-up">⬆️</div>
+                    <div class="dir-cell" id="dir-center">🎯</div>
+                    <div class="dir-cell" id="dir-down">⬇️</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-start" id="startBtn" onclick="startGame()">🎮 开始游戏</button>
+                <button class="btn-stop" id="stopBtn" onclick="stopGame()" disabled>⏹ 停止</button>
+            </div>
+
+            <!-- 校准提示覆盖层 -->
+            <div id="calibOverlay" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.82);
+                 border-radius:12px; z-index:20; flex-direction:column; align-items:center;
+                 justify-content:center; gap:10px; text-align:center; padding:16px;">
+                <div style="font-size:1.1em; color:#FFD700; font-weight:bold;" id="calibTitle">🎯 校准中</div>
+                <div style="font-size:0.75em; color:#fff; line-height:1.8;" id="calibMsg">请按提示活动头部</div>
+                <div style="width:80%; background:rgba(255,255,255,0.15); border-radius:8px;
+                     height:12px; overflow:hidden; border:1px solid #FFD700;">
+                    <div id="calibBar" style="height:100%; background:linear-gradient(90deg,#00f0ff,#FFD700);
+                         width:0%; transition:width 0.1s linear; border-radius:6px;"></div>
+                </div>
+                <div style="font-size:0.7em; color:#aaa;" id="calibSub"></div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="game-board">
+                <div id="gameCanvasWrap" style="position:relative; display:inline-block; width:100%;">
+                <canvas id="gameCanvas" width="380" height="400" style="background: #000; display: block; margin: 0 auto;"></canvas>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label" id="scoreLabel">🍬 得分</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="lives">❤️❤️❤️</div>
+                    <div class="stat-label" id="livesLabel">💖 生命</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="playTime">00:00</div>
+                    <div class="stat-label" id="timeLabel">⏱ 游戏时间</div>
+                </div>
+            </div>
+
+            <div class="power-ups">
+                <h3 id="powerupsTitle">⚡ 能量道具</h3>
+                <div id="powerModeLabel">⚡ 无敌模式</div>
+                <div id="powerModeBar"><div id="powerModeBarFill" style="width:100%"></div></div>
+                <div class="power-up-list">
+                    <div class="power-up-item" id="power-speed">🏃 速度提升</div>
+                    <div class="power-up-item" id="power-ghost">👻 幽灵冻结</div>
+                    <div class="power-up-item" id="power-double">✨ 双倍分数</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="alert-overlay" id="gameOverOverlay">
+        <div class="alert-box">
+            <h2 id="gameOverTitle">💀 游戏结束</h2>
+            <div class="ghost-container">
+                <div class="ghost">👻</div>
+                <div class="ghost">👻</div>
+                <div class="ghost">👻</div>
+            </div>
+            <p><span id="gameOverMsgLine1">三条命已用完</span><br><span id="finalScoreLabel">最终得分：</span><span id="finalScore">0</span></p>
+            <button class="btn-start" id="restartBtn" onclick="restartGame()">再来一局</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+        const I18N = {
+            zh: {
+                pageTitle: '🎮 豆子迷宫颈椎大冒险',
+                title: '🎮 吃豆人颈椎大冒险',
+                subtitle: '用你的脸控制吃豆人，吃掉豆子，躲避幽灵！',
+                start: '🎮 开始游戏',
+                stop: '⏹ 停止',
+                scoreLabel: '🍬 得分',
+                livesLabel: '💖 生命',
+                timeLabel: '⏱ 游戏时间',
+                hintLeft: '🎯 <strong>向左看</strong> → 吃豆人向左移动',
+                hintRight: '🎯 <strong>向右看</strong> → 吃豆人向右移动',
+                hintUp: '🎯 <strong>向上看</strong> → 吃豆人向上移动',
+                hintDown: '🎯 <strong>向下看</strong> → 吃豆人向下移动',
+                powerupsTitle: '⚡ 能量道具',
+                powerModeDefault: '⚡ 无敌模式',
+                powerGhost: '👻 幽灵冻结',
+                powerSpeed: '🏃 速度提升',
+                powerDouble: '✨ 双倍分数',
+                gameOverTitle: '💀 游戏结束',
+                gameOverLine1: '三条命已用完',
+                finalScoreLabel: '最终得分：',
+                restart: '再来一局',
+                modelLoading: '模型加载中，请稍候...',
+                cameraFail: '无法访问摄像头，请检查权限设置',
+                calibHold: '保持姿势直到进度条结束',
+                calibReady: '准备中...',
+                calibReadyCountdown: '秒后开始采集...',
+                calibPrepareCenterTitle: '😐 准备：面朝正前方',
+                calibPrepareCenterMsg: '请将头摆到正前方中立位置',
+                calibCollectCenterTitle: '😐 采集中：正前方',
+                calibCollectCenterMsg: '保持中立姿势，勿移动',
+                calibPrepareLeftTitle: '👈 准备：向左转头',
+                calibPrepareLeftMsg: '请将头尽量转向左侧',
+                calibCollectLeftTitle: '👈 采集中：左转',
+                calibCollectLeftMsg: '保持左转姿势，勿移动',
+                calibBackCenterTitle: '😐 回到中心',
+                calibBackCenterMsg: '请回到正前方...',
+                calibPrepareRightTitle: '👉 准备：向右转头',
+                calibPrepareRightMsg: '请将头尽量转向右侧',
+                calibCollectRightTitle: '👉 采集中：右转',
+                calibCollectRightMsg: '保持右转姿势，勿移动',
+                calibPrepareUpTitle: '👆 准备：向上抬头',
+                calibPrepareUpMsg: '请将头尽量向上抬起',
+                calibCollectUpTitle: '👆 采集中：抬头',
+                calibCollectUpMsg: '保持抬头姿势，勿移动',
+                calibPrepareDownTitle: '👇 准备：向下低头',
+                calibPrepareDownMsg: '请将头尽量向下低下',
+                calibCollectDownTitle: '👇 采集中：低头',
+                calibCollectDownMsg: '保持低头姿势，勿移动',
+                calibDone: '✅ 校准完成',
+                calibDoneSub: '即将开始游戏...',
+                axisLeft: '左',
+                axisRight: '右',
+                axisUp: '上',
+                axisDown: '下'
+            },
+            en: {
+                pageTitle: '🎮 Pacman Neck Adventure',
+                title: '🎮 Pacman Neck Adventure',
+                subtitle: 'Control Pacman with your face: eat dots and avoid ghosts!',
+                start: '🎮 Start',
+                stop: '⏹ Stop',
+                scoreLabel: '🍬 Score',
+                livesLabel: '💖 Lives',
+                timeLabel: '⏱ Time',
+                hintLeft: '🎯 <strong>Look Left</strong> → Move Left',
+                hintRight: '🎯 <strong>Look Right</strong> → Move Right',
+                hintUp: '🎯 <strong>Look Up</strong> → Move Up',
+                hintDown: '🎯 <strong>Look Down</strong> → Move Down',
+                powerupsTitle: '⚡ Power-ups',
+                powerModeDefault: '⚡ Power Mode',
+                powerGhost: '👻 Ghost Freeze',
+                powerSpeed: '🏃 Speed Boost',
+                powerDouble: '✨ Double Score',
+                gameOverTitle: '💀 Game Over',
+                gameOverLine1: 'All 3 lives are gone',
+                finalScoreLabel: 'Final Score: ',
+                restart: 'Play Again',
+                modelLoading: 'Loading models, please wait...',
+                cameraFail: 'Cannot access camera. Please check permission.',
+                calibHold: 'Hold still until the bar ends',
+                calibReady: 'Get ready...',
+                calibReadyCountdown: 's to start capture...',
+                calibPrepareCenterTitle: '😐 Ready: Face Forward',
+                calibPrepareCenterMsg: 'Keep your head in neutral position',
+                calibCollectCenterTitle: '😐 Capturing: Forward',
+                calibCollectCenterMsg: 'Hold neutral pose',
+                calibPrepareLeftTitle: '👈 Ready: Turn Left',
+                calibPrepareLeftMsg: 'Turn your head to the left',
+                calibCollectLeftTitle: '👈 Capturing: Left',
+                calibCollectLeftMsg: 'Hold left pose',
+                calibBackCenterTitle: '😐 Back to Center',
+                calibBackCenterMsg: 'Please return to center...',
+                calibPrepareRightTitle: '👉 Ready: Turn Right',
+                calibPrepareRightMsg: 'Turn your head to the right',
+                calibCollectRightTitle: '👉 Capturing: Right',
+                calibCollectRightMsg: 'Hold right pose',
+                calibPrepareUpTitle: '👆 Ready: Look Up',
+                calibPrepareUpMsg: 'Raise your head up',
+                calibCollectUpTitle: '👆 Capturing: Up',
+                calibCollectUpMsg: 'Hold up pose',
+                calibPrepareDownTitle: '👇 Ready: Look Down',
+                calibPrepareDownMsg: 'Lower your head down',
+                calibCollectDownTitle: '👇 Capturing: Down',
+                calibCollectDownMsg: 'Hold down pose',
+                calibDone: '✅ Calibration Done',
+                calibDoneSub: 'Starting game...',
+                axisLeft: 'L',
+                axisRight: 'R',
+                axisUp: 'U',
+                axisDown: 'D'
+            }
+        };
+
+        let currentLang = localStorage.getItem('pacman_lang') || 'zh';
+        if (!I18N[currentLang]) currentLang = 'zh';
+
+        function t(key) {
+            return I18N[currentLang][key] || I18N.zh[key] || key;
+        }
+
+        function applyI18n() {
+            document.title = t('pageTitle');
+            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+            document.getElementById('langBtn').textContent = currentLang === 'zh' ? 'EN' : '中';
+            document.getElementById('titleText').textContent = t('title');
+            document.getElementById('subtitleText').textContent = t('subtitle');
+            document.getElementById('startBtn').textContent = t('start');
+            document.getElementById('stopBtn').textContent = t('stop');
+            document.getElementById('scoreLabel').textContent = t('scoreLabel');
+            document.getElementById('livesLabel').textContent = t('livesLabel');
+            document.getElementById('timeLabel').textContent = t('timeLabel');
+            document.getElementById('hintLeft').innerHTML = t('hintLeft');
+            document.getElementById('hintRight').innerHTML = t('hintRight');
+            document.getElementById('hintUp').innerHTML = t('hintUp');
+            document.getElementById('hintDown').innerHTML = t('hintDown');
+            document.getElementById('powerupsTitle').textContent = t('powerupsTitle');
+            document.getElementById('power-speed').textContent = t('powerSpeed');
+            document.getElementById('power-ghost').textContent = t('powerGhost');
+            document.getElementById('power-double').textContent = t('powerDouble');
+            const modeLabel = document.getElementById('powerModeLabel');
+            if (gameState?.powerMode && gameState?.currentPowerEffect) {
+                modeLabel.textContent =
+                    gameState.currentPowerEffect === 'ghost' ? t('powerGhost') :
+                    gameState.currentPowerEffect === 'speed' ? t('powerSpeed') : t('powerDouble');
+            } else {
+                modeLabel.textContent = t('powerModeDefault');
+            }
+            document.getElementById('gameOverTitle').textContent = t('gameOverTitle');
+            document.getElementById('gameOverMsgLine1').textContent = t('gameOverLine1');
+            document.getElementById('finalScoreLabel').textContent = t('finalScoreLabel');
+            document.getElementById('restartBtn').textContent = t('restart');
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('pacman_lang', currentLang);
+            applyI18n();
+        }
+
+        // 游戏配置
+        const CONFIG = {
+            gridWidth: 19,   // 网格宽度
+            gridHeight: 20,  // 网格高度
+            cellSize: 20,    // 每格像素 (会根据 canvas 动态调整)
+            pacmanSpeed: 0.03,
+            ghostSpeed: 0.015
+        };
+
+        // 迷宫地图 (1=墙，0=豆子，2=空，3=能量豆，4=幽灵屋)
+        const MAZE_TEMPLATE = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+            [1,3,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,3,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,0,1,1,4,1,1,0,1,0,1,1,1,1],
+            [0,0,0,0,0,0,0,1,4,4,4,1,0,0,0,0,0,0,0],
+            [1,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
+            [1,3,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,3,1],
+            [1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        // 游戏状态
+        let gameState = {
+            running: false,
+            score: 0,
+            lives: 3,
+            startTime: 0,
+            pacman: { 
+                gridX: 9, 
+                gridY: 16,
+                x: 9, 
+                y: 16,
+                direction: 'none',
+                nextDirection: 'none',
+                mouthOpen: 0,
+                mouthDir: 1
+            },
+            ghosts: [],
+            maze: [],
+            dots: [],
+            powerUps: [],
+            activePowerUps: [],
+            lastControlTime: 0,
+            lastAngles: { yaw: 0, pitch: 0, roll: 0 },
+            accumYaw: 0,   // 各轴运动累积量
+            accumPitch: 0,
+            headState: 'center', // 状态机：'center' | 'left' | 'right' | 'up' | 'down'
+            // 自适应阈值：基于绝对角度的各方向判断区间
+            // center: 中性位置的角度（校准得到）
+            // 各方向触发条件：yaw/pitch 超过 trigYaw/trigLeft 等绝对值
+            thresholds: {
+                // 中性位置（校准中心帧）
+                centerYaw:   0.0,
+                centerPitch: 0.0,
+                // 各方向绝对触发值（中心 + 该方向偏移 * 0.5）
+                trigLeft:  0.18,   // yaw > trigLeft  → 左
+                trigRight: -0.18,  // yaw < trigRight → 右
+                trigUp:    -0.56,  // pitch < trigUp  → 上
+                trigDown:   0.03,  // pitch > trigDown → 下（相对中心）
+                // 回中区（各轴独立）：回到中性附近才解锁
+                centerZoneYaw:   0.12,
+                centerZonePitch: 0.10,
+            },
+            powerMode: false,
+            powerModeTimer: null,
+            blinkTimer: null,
+            powerModeEndTime: 0,
+            powerModeDuration: 8000,
+            doubleScore: false,
+            floatingTexts: []
+        };
+
+        let video, canvas, ctx, gameCanvas, gameCtx;
+        let animationId, gameLoopId, timerIntervalId;
+        let modelsLoaded = false;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            gameCanvas = document.getElementById('gameCanvas');
+            gameCtx = gameCanvas.getContext('2d');
+            applyI18n();
+            
+            // 动态计算单元格大小
+            CONFIG.cellSize = gameCanvas.width / CONFIG.gridWidth;
+            
+            console.log('Canvas size:', gameCanvas.width, 'x', gameCanvas.height);
+            console.log('Cell size:', CONFIG.cellSize);
+            console.log('Grid size:', CONFIG.gridWidth, 'x', CONFIG.gridHeight);
+            
+            loadModels();
+            initGame();
+            drawGame(); // 初始绘制，让用户能看到游戏界面
+        });
+
+        async function loadModels() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('model/');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('model/');
+                modelsLoaded = true;
+                console.log('✅ 模型加载完成');
+            } catch (error) {
+                console.error('❌ 模型加载失败:', error);
+            }
+        }
+
+        function initGame() {
+            console.log('初始化游戏...');
+            
+            // 复制迷宫
+            gameState.maze = MAZE_TEMPLATE.map(row => [...row]);
+            console.log('迷宫大小:', gameState.maze.length, 'x', gameState.maze[0].length);
+            
+            gameState.dots = [];
+            gameState.dotsMap = new Map();   // key: "x,y" → 快速O(1)查找
+            gameState.powerUps = [];
+            gameState.powerUpsMap = new Map();
+
+            // 从迷宫初始化豆子和能量豆
+            for (let y = 0; y < gameState.maze.length; y++) {
+                for (let x = 0; x < gameState.maze[y].length; x++) {
+                    if (gameState.maze[y][x] === 0) {
+                        const dot = { x, y };
+                        gameState.dots.push(dot);
+                        gameState.dotsMap.set(`${x},${y}`, dot);
+                    } else if (gameState.maze[y][x] === 3) {
+                        const pu = { x, y, type: 'power' };
+                        gameState.powerUps.push(pu);
+                        gameState.powerUpsMap.set(`${x},${y}`, pu);
+                    }
+                }
+            }
+            
+            console.log('豆子数量:', gameState.dots.length);
+            console.log('能量豆数量:', gameState.powerUps.length);
+
+            // 初始化幽灵（放在幽灵屋）
+            gameState.ghosts = [
+                { x: 9, y: 9, startX: 9, startY: 9, color: '#FF0000', speed: CONFIG.ghostSpeed, scared: false, blinking: false, dir: {dx:0,dy:-1}, releaseDelay: 0,    _centered: true },
+                { x: 8, y: 9, startX: 8, startY: 9, color: '#FFB8FF', speed: CONFIG.ghostSpeed, scared: false, blinking: false, dir: {dx:0,dy:-1}, releaseDelay: 3000, _centered: true },
+                { x:10, y: 9, startX:10, startY: 9, color: '#00FFFF', speed: CONFIG.ghostSpeed, scared: false, blinking: false, dir: {dx:0,dy:-1}, releaseDelay: 6000, _centered: true },
+                { x: 9, y: 8, startX: 9, startY: 8, color: '#FFB852', speed: CONFIG.ghostSpeed, scared: false, blinking: false, dir: {dx:0,dy:-1}, releaseDelay: 9000, _centered: true }
+            ];
+
+            // 重置吃豆人位置
+            gameState.pacman = { 
+                gridX: 9, 
+                gridY: 16,
+                x: 9, 
+                y: 16,
+                direction: 'none',
+                nextDirection: 'none',
+                mouthOpen: 0,
+                mouthDir: 1
+            };
+
+            gameState.score = 0;
+            gameState.lives = 3;
+            gameState.activePowerUps = [];
+            gameState.currentPowerEffect = null;
+            gameState.doubleScore = false;
+            gameState.pacman.speedBoost = false;
+            gameState.accumYaw = 0;
+            gameState.accumPitch = 0;
+            gameState.lastControlTime = 0;
+            gameState.lastAngles = { yaw: 0, pitch: 0, roll: 0 };
+            gameState.headState = 'center';
+            
+            updateStats();
+            console.log('游戏初始化完成');
+        }
+
+        // ─── 音频引擎 ───────────────────────────────────────────────
+        let audioCtx = null;
+        let bgmNodes = [];   // 只存 BGM 节点，用于停止时断开
+        let bgmPlaying = false;
+        let bgmLoopTimer = null;
+
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        // 播放单个音符，isBgm=true 时才加入 bgmNodes（BGM专用）
+        // 音符结束后自动断开节点，避免音频图堆积
+        function playNote(ctx, freq, startTime, duration, volume = 0.18, type = 'square', isBgm = false) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(volume, startTime + 0.01);
+            gain.gain.setValueAtTime(volume, startTime + duration * 0.75);
+            gain.gain.linearRampToValueAtTime(0, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.02);
+            // 音符播完后自动断开，并从 bgmNodes 中移除引用
+            osc.onended = () => {
+                try { osc.disconnect(); gain.disconnect(); } catch(e){}
+                if (isBgm) {
+                    const i = bgmNodes.indexOf(osc);
+                    if (i !== -1) bgmNodes.splice(i, 2); // 同时移除 osc 和 gain
+                }
+            };
+            if (isBgm) bgmNodes.push(osc, gain);
+        }
+
+        // 音效专用：用 AudioContext 离线调度，完全不阻塞主线程
+        function playSfx(freqs, durations, volumes, type = 'square') {
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+            const t = ctx.currentTime + 0.01;
+            freqs.forEach((freq, i) => {
+                const offset = durations.slice(0, i).reduce((a, b) => a + b, 0);
+                playNote(ctx, freq, t + offset, durations[i], volumes[i] ?? volumes[0], type, false);
+            });
+        }
+
+        // 经典吃豆人开场旋律（Namco 1980）
+        function playStartJingle() {
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+            const t = ctx.currentTime + 0.05;
+            const BPM = 200;
+            const B = 60 / BPM;  // 一拍时长（秒）
+
+            // 音名 → 频率（Hz）
+            const N = {
+                Bb3:233.1, C4:261.6, D4:293.7, Eb4:311.1, E4:329.6,
+                F4:349.2, G4:392.0, Ab4:415.3, A4:440.0, Bb4:466.2,
+                B4:493.9, C5:523.3, D5:587.3, Eb5:622.3, E5:659.3,
+                F5:698.5, G5:784.0
+            };
+
+            // [音名, 拍数]
+            const melody = [
+                [N.Bb3,0.5],[N.Bb4,0.5],[N.Ab4,0.5],[N.Bb4,0.5],
+                [N.Eb4,0.5],[N.Bb4,0.5],[N.Ab4,0.5],[N.Bb4,0.5],
+                [N.G4,0.5], [N.Bb4,0.5],[N.Ab4,0.5],[N.Bb4,0.5],
+                [N.G4,0.5], [N.Bb4,0.5],[N.Ab4,0.5],[N.Bb4,0.5],
+                [N.F4,0.5], [N.E4,0.5], [N.F4,0.5], [N.F5,1.5],
+                [N.F4,0.5], [N.E4,0.5], [N.F4,0.5], [N.Eb5,1.5],
+                [N.F4,0.5], [N.E4,0.5], [N.F4,0.5], [N.D5,1.5],
+                [N.Eb4,0.5],[N.D4,0.5], [N.Eb4,0.5],[N.C5,3],
+            ];
+
+            let cursor = t;
+            melody.forEach(([freq, beats]) => {
+                const dur = beats * B * 0.92;
+                playNote(ctx, freq, cursor, dur, 0.15, 'square', true);
+                cursor += beats * B;
+            });
+            return cursor - t;
+        }
+
+        // 循环背景音乐（开场曲结束后播放简单循环旋律）
+        function playBGM() {
+            if (!bgmPlaying) return;
+            const ctx = getAudioCtx();
+            const t = ctx.currentTime + 0.05;
+            const BPM = 160;
+            const B = 60 / BPM;
+
+            const N = {
+                C4:261.6, D4:293.7, E4:329.6, F4:349.2,
+                G4:392.0, A4:440.0, B4:493.9, C5:523.3,
+                D5:587.3, E5:659.3, G5:784.0
+            };
+
+            const loop = [
+                [N.C5,1],[N.B4,0.5],[N.A4,0.5],[N.G4,1],[N.E4,0.5],[N.G4,0.5],
+                [N.F4,1],[N.E4,0.5],[N.D4,0.5],[N.C4,2],
+                [N.G4,1],[N.A4,0.5],[N.B4,0.5],[N.C5,1],[N.D5,0.5],[N.E5,0.5],
+                [N.F4,0.5],[N.G4,0.5],[N.A4,0.5],[N.G4,0.5],[N.C5,2],
+            ];
+
+            let cursor = t;
+            loop.forEach(([freq, beats]) => {
+                playNote(ctx, freq, cursor, beats * B * 0.88, 0.10, 'triangle', true);
+                cursor += beats * B;
+            });
+            const totalDur = (cursor - t) * 1000;
+            bgmLoopTimer = setTimeout(() => { if (bgmPlaying) playBGM(); }, totalDur - 100);
+        }
+
+        // 吃豆子音效
+        function playEatDot() {
+            playSfx([600, 480], [0.04, 0.04], [0.07], 'sine');
+        }
+
+        // 吃到能量豆音效
+        function playEatPowerUp() {
+            playSfx([523, 659, 784, 1047], [0.07, 0.07, 0.07, 0.12], [0.18], 'square');
+        }
+
+        // 吃掉幽灵音效
+        function playEatGhost() {
+            playSfx([880, 660, 440, 220], [0.06, 0.06, 0.06, 0.1], [0.2], 'sawtooth');
+        }
+
+        // 被幽灵吃掉音效
+        function playDeath() {
+            // 死亡音效已禁用
+        }
+
+        function startMusic() {
+            bgmPlaying = true;
+            const jingleDur = playStartJingle();
+            bgmLoopTimer = setTimeout(() => { if (bgmPlaying) playBGM(); }, jingleDur * 1000);
+        }
+
+        function stopMusic() {
+            bgmPlaying = false;
+            if (bgmLoopTimer) { clearTimeout(bgmLoopTimer); bgmLoopTimer = null; }
+            bgmNodes.forEach(n => { try { n.disconnect(); } catch(e){} });
+            bgmNodes = [];
+        }
+        // ────────────────────────────────────────────────────────────
+
+        // ─── 自适应校准 ─────────────────────────────────────────────
+        async function calibrate() {
+            if (!faceDetectorOptions) faceDetectorOptions = new faceapi.TinyFaceDetectorOptions();
+
+            const overlay = document.getElementById('calibOverlay');
+            const barEl   = document.getElementById('calibBar');
+            const titleEl = document.getElementById('calibTitle');
+            const msgEl   = document.getElementById('calibMsg');
+            const subEl   = document.getElementById('calibSub');
+
+            overlay.style.display = 'flex';
+
+            // 辅助：采集 durationMs 内角度的中位数（取中间帧均值，过滤抖动）
+            async function collectAvg(durationMs, prompt, subPrompt) {
+                titleEl.textContent = prompt;
+                msgEl.textContent   = subPrompt;
+                subEl.textContent   = t('calibHold');
+                barEl.style.width   = '0%';
+
+                const samples = [];
+                const start = Date.now();
+
+                while (Date.now() - start < durationMs) {
+                    barEl.style.width = ((Date.now() - start) / durationMs * 100) + '%';
+                    try {
+                        const det = await faceapi
+                            .detectSingleFace(video, faceDetectorOptions)
+                            .withFaceLandmarks();
+                        if (det) samples.push(calculateHeadPose(det.landmarks));
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 80));
+                }
+                barEl.style.width = '100%';
+
+                if (samples.length === 0) return { yaw: 0, pitch: 0 };
+                // 去掉前后 20% 的样本再取均值，过滤姿势切换时的过渡帧
+                const trim = Math.floor(samples.length * 0.2);
+                const valid = samples.slice(trim, samples.length - trim);
+                const yaw   = valid.reduce((s, a) => s + a.yaw,   0) / valid.length;
+                const pitch = valid.reduce((s, a) => s + a.pitch, 0) / valid.length;
+                return { yaw, pitch };
+            }
+
+            // 辅助：显示倒计时提示，不采集数据，让用户有时间摆好姿势
+            async function readyCountdown(durationMs, prompt, subPrompt) {
+                titleEl.textContent = prompt;
+                msgEl.textContent   = subPrompt;
+                subEl.textContent   = t('calibReady');
+                barEl.style.width   = '0%';
+                const start = Date.now();
+                while (Date.now() - start < durationMs) {
+                    barEl.style.width = ((Date.now() - start) / durationMs * 100) + '%';
+                    const remaining = Math.ceil((durationMs - (Date.now() - start)) / 1000);
+                    subEl.textContent = `${remaining} ${t('calibReadyCountdown')}`;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                barEl.style.width = '100%';
+            }
+
+            // 阶段 0：中心（中性位置）
+            await readyCountdown(2000, t('calibPrepareCenterTitle'), t('calibPrepareCenterMsg'));
+            const posCenter = await collectAvg(3000, t('calibCollectCenterTitle'), t('calibCollectCenterMsg'));
+
+            // 阶段 1~4：每次先提示目标方向2秒，采集3秒，再回中2秒准备下一个
+            await readyCountdown(2000, t('calibPrepareLeftTitle'), t('calibPrepareLeftMsg'));
+            const posLeft  = await collectAvg(3000, t('calibCollectLeftTitle'), t('calibCollectLeftMsg'));
+
+            await collectAvg(2000, t('calibBackCenterTitle'), t('calibBackCenterMsg'));
+            await readyCountdown(2000, t('calibPrepareRightTitle'), t('calibPrepareRightMsg'));
+            const posRight = await collectAvg(3000, t('calibCollectRightTitle'), t('calibCollectRightMsg'));
+
+            await collectAvg(2000, t('calibBackCenterTitle'), t('calibBackCenterMsg'));
+            await readyCountdown(2000, t('calibPrepareUpTitle'), t('calibPrepareUpMsg'));
+            const posUp    = await collectAvg(3000, t('calibCollectUpTitle'), t('calibCollectUpMsg'));
+
+            await collectAvg(2000, t('calibBackCenterTitle'), t('calibBackCenterMsg'));
+            await readyCountdown(2000, t('calibPrepareDownTitle'), t('calibPrepareDownMsg'));
+            const posDown  = await collectAvg(3000, t('calibCollectDownTitle'), t('calibCollectDownMsg'));
+
+            // ── 基于绝对位置的触发值计算 ──────────────────────────
+            // 触发点 = 中心 + 各方向偏移量 * 触发比例
+            // 下方向偏移极小，用 1% 确保能触发；其余三方向用 5%
+
+            const leftOffset  = posLeft.yaw   - posCenter.yaw;
+            const rightOffset = posRight.yaw  - posCenter.yaw;
+            const upOffset    = posUp.pitch   - posCenter.pitch;
+            const downOffset  = posDown.pitch - posCenter.pitch;
+
+            const trigLeft  = posCenter.yaw   + leftOffset  * 0.05;
+            const trigRight = posCenter.yaw   + rightOffset * 0.05;
+            const trigUp    = posCenter.pitch + upOffset    * 0.05;
+            const trigDown  = posCenter.pitch + downOffset  * 0.01;
+
+            // 回中区：中心值 ± 最小偏移的 30%（确保能轻松回中）
+            const centerZoneYaw   = Math.max(Math.abs(leftOffset),  Math.abs(rightOffset)) * 0.20;
+            const centerZonePitch = Math.max(Math.abs(upOffset),    Math.abs(downOffset))  * 0.20;
+
+            gameState.thresholds = {
+                centerYaw:   posCenter.yaw,
+                centerPitch: posCenter.pitch,
+                trigLeft,
+                trigRight,
+                trigUp,
+                trigDown,
+                centerZoneYaw:   Math.max(centerZoneYaw,   0.04),
+                centerZonePitch: Math.max(centerZonePitch, 0.03),
+            };
+
+            // 完成提示
+            titleEl.textContent = t('calibDone');
+            msgEl.textContent   = `${t('axisLeft')}:${trigLeft.toFixed(3)} ${t('axisRight')}:${trigRight.toFixed(3)} ${t('axisUp')}:${trigUp.toFixed(3)} ${t('axisDown')}:${trigDown.toFixed(3)}`;
+            subEl.textContent   = t('calibDoneSub');
+            barEl.style.width   = '100%';
+
+            await new Promise(r => setTimeout(r, 1500));
+            overlay.style.display = 'none';
+        }
+        // ────────────────────────────────────────────────────────────
+
+        async function startGame() {
+            if (!modelsLoaded) {
+                alert(t('modelLoading'));
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    }
+                });
+                
+                video.srcObject = stream;
+                await new Promise(resolve => {
+                    video.onloadedmetadata = resolve;
+                });
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // 先做自适应校准，校准完毕再正式开始
+                await calibrate();
+
+                gameState.running = true;
+                gameState.startTime = Date.now();
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                
+                startMusic();
+                detectFace();
+                gameLoop();
+                startTimer();
+                
+                console.log('✅ 游戏已启动');
+                
+            } catch (error) {
+                console.error('摄像头启动失败:', error);
+                alert(t('cameraFail'));
+            }
+        }
+
+        function stopGame() {
+            gameState.running = false;
+            stopMusic();
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            if (animationId) cancelAnimationFrame(animationId);
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            if (timerIntervalId) { clearInterval(timerIntervalId); timerIntervalId = null; }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function resetGame() {
+            stopGame();
+            initGame();
+            drawGame();
+        }
+
+        const FACE_DETECT_INTERVAL = 80;
+        let lastFaceDetectTime = 0;
+        let faceDetectorOptions = null; // 懒初始化，避免 faceapi 未加载时报错
+
+        async function detectFace() {
+            if (!gameState.running) return;
+            if (!faceDetectorOptions) faceDetectorOptions = new faceapi.TinyFaceDetectorOptions();
+
+            const now = performance.now();
+            if (now - lastFaceDetectTime >= FACE_DETECT_INTERVAL) {
+                lastFaceDetectTime = now;
+                try {
+                    const detections = await faceapi
+                        .detectSingleFace(video, faceDetectorOptions)
+                        .withFaceLandmarks();
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    if (detections) {
+                        const box = detections.detection.box;
+                        ctx.strokeStyle = '#FFD700';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(box.x, box.y, box.width, box.height);
+                        
+                        faceapi.draw.drawFaceLandmarks(canvas, detections);
+                        
+                        const angles = calculateHeadPose(detections.landmarks);
+                        updateDirectionIndicator(angles);
+                        controlPacman(angles);
+                    }
+                } catch (error) {
+                    console.error('检测失败:', error);
+                }
+            }
+
+            animationId = requestAnimationFrame(detectFace);
+        }
+
+        function calculateHeadPose(landmarks) {
+            // dlib 68点：鼻子是点27-35，getNose()返回9个点
+            // nose[0]=点27(鼻梁顶)  nose[3]=点30(鼻尖)  nose[6]=点33(鼻底中央)
+            const nose     = landmarks.getNose();
+            const leftEye  = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            // 鼻梁顶(nose[0]) 到 鼻尖(nose[3]) 的向量，代表头部朝向
+            const noseBridge = nose[0]; // 点27：鼻梁顶，随头部左右转动横向偏移小
+            const noseTip    = nose[3]; // 点30：鼻尖，转头时横向偏移最明显
+
+            const leftEyeCenter = leftEye.reduce((acc, p) => ({
+                x: acc.x + p.x / leftEye.length,
+                y: acc.y + p.y / leftEye.length
+            }), { x: 0, y: 0 });
+
+            const rightEyeCenter = rightEye.reduce((acc, p) => ({
+                x: acc.x + p.x / rightEye.length,
+                y: acc.y + p.y / rightEye.length
+            }), { x: 0, y: 0 });
+
+            // 用两眼中心连线距离做归一化基准，消除人脸远近差异
+            const eyeDist = Math.hypot(
+                rightEyeCenter.x - leftEyeCenter.x,
+                rightEyeCenter.y - leftEyeCenter.y
+            ) || 1;
+
+            // 两眼中心连线的中点（作为面部中轴参考）
+            const eyeMidX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
+            const eyeMidY = (leftEyeCenter.y + rightEyeCenter.y) / 2;
+
+            // yaw（左右）：鼻尖相对于鼻梁顶的横向偏移，归一化后正常转头约 ±0.3~0.7
+            // 摄像头镜像：鼻尖向画面左偏(x减小) = 人向右转头
+            const yaw = (noseTip.x - noseBridge.x) / eyeDist;
+
+            // pitch（上下）：鼻尖相对于两眼中点的纵向距离，归一化
+            // 抬头时鼻尖靠近眼睛(y差变小)，低头时远离(y差变大)
+            const pitchRaw = (noseTip.y - eyeMidY) / eyeDist;
+            // 中性位置 pitchRaw 约为 0.8~1.2，做偏移使中性归零
+            const pitchNeutral = 1.0;
+            const pitch = pitchRaw - pitchNeutral;
+
+            const roll = Math.atan2(
+                rightEyeCenter.y - leftEyeCenter.y,
+                rightEyeCenter.x - leftEyeCenter.x
+            ) * 180 / Math.PI;
+
+            return {
+                yaw:   Math.max(-1.5, Math.min(1.5, yaw)),
+                pitch: Math.max(-1.0, Math.min(1.0, pitch)),
+                roll:  Math.max(-30,  Math.min(30,  roll))
+            };
+        }
+
+        function updateDirectionIndicator(angles) {
+            document.getElementById('dir-up').classList.remove('active');
+            document.getElementById('dir-down').classList.remove('active');
+            document.getElementById('dir-center').classList.remove('active');
+            
+            if (angles.pitch < -0.20) {
+                document.getElementById('dir-up').classList.add('active');
+            } else if (angles.pitch > 0.20) {
+                document.getElementById('dir-down').classList.add('active');
+            } else {
+                document.getElementById('dir-center').classList.add('active');
+            }
+        }
+
+        function isWall(gridX, gridY) {
+            const x = Math.round(gridX);
+            const y = Math.round(gridY);
+            // y=10 是隧道行，左右越界视为通道（传送口）
+            if (y === 10 && (x < 0 || x >= CONFIG.gridWidth)) return false;
+            if (y < 0 || y >= CONFIG.gridHeight || x < 0 || x >= CONFIG.gridWidth) {
+                return true;
+            }
+            return gameState.maze[y][x] === 1;
+        }
+
+        function canMove(gridX, gridY, direction) {
+            let newX = gridX;
+            let newY = gridY;
+            
+            switch(direction) {
+                case 'left': newX -= 1; break;
+                case 'right': newX += 1; break;
+                case 'up': newY -= 1; break;
+                case 'down': newY += 1; break;
+            }
+            
+            // 隧道效果：y=10 时允许左右越界传送
+            if (gridY === 10) {
+                if (newX < 0) newX = CONFIG.gridWidth - 1;
+                if (newX >= CONFIG.gridWidth) newX = 0;
+            }
+            
+            if (newY < 0 || newY >= CONFIG.gridHeight) return false;
+            if (gameState.maze[newY][newX] === 1) return false;
+            
+            return true;
+        }
+
+           function controlPacman(angles) {
+            const t = gameState.thresholds;
+            const COOLDOWN_MS = 250;
+            const now = Date.now();
+            gameState.lastAngles = { yaw: angles.yaw, pitch: angles.pitch, roll: angles.roll };
+
+            // ── 绝对位置状态机 ────────────────────────────────────────
+            // 每个方向有自己的触发绝对值（由校准决定）
+            // 触发后锁定，直到该轴回到中性附近（centerZone）才解锁
+            // 两轴完全独立，切换方向不会产生误判
+
+            if (gameState.headState === 'left' || gameState.headState === 'right') {
+                // yaw 轴锁定：等 yaw 回到中性附近
+                const nearCenter = Math.abs(angles.yaw - t.centerYaw) < t.centerZoneYaw;
+                if (nearCenter) gameState.headState = 'center';
+                else return;
+            } else if (gameState.headState === 'up' || gameState.headState === 'down') {
+                // pitch 轴锁定：等 pitch 回到中性附近
+                const nearCenter = Math.abs(angles.pitch - t.centerPitch) < t.centerZonePitch;
+                if (nearCenter) gameState.headState = 'center';
+                else return;
+            }
+
+            // headState === 'center'，可以检测新方向
+            if (now - gameState.lastControlTime < COOLDOWN_MS) return;
+
+            let newDirection = 'none';
+
+            // 计算各方向距触发线的距离，取最远的方向（最确定的意图）
+            const dLeft  = angles.yaw   - t.trigLeft;   // 正值 → 超过左触发
+            const dRight = t.trigRight  - angles.yaw;   // 正值 → 超过右触发
+            const dUp    = t.trigUp     - angles.pitch; // 正值 → 超过上触发
+            const dDown  = angles.pitch - t.trigDown;   // 正值 → 超过下触发
+
+            const triggered = [
+                { dir: 'left',  score: dLeft  },
+                { dir: 'right', score: dRight },
+                { dir: 'up',    score: dUp    },
+                { dir: 'down',  score: dDown  },
+            ].filter(d => d.score > 0)
+             .sort((a, b) => b.score - a.score);
+
+            if (triggered.length > 0) {
+                newDirection = triggered[0].dir;
+                gameState.headState = newDirection;
+            }
+
+            if (newDirection !== 'none') {
+                gameState.pacman.nextDirection = newDirection;
+                gameState.lastControlTime = now;
+
+                const gridX = Math.round(gameState.pacman.x);
+                const gridY = Math.round(gameState.pacman.y);
+                if (Math.abs(gameState.pacman.x - gridX) < 0.1 &&
+                    Math.abs(gameState.pacman.y - gridY) < 0.1) {
+                    if (canMove(gridX, gridY, newDirection)) {
+                        gameState.pacman.direction = newDirection;
+                    }
+                }
+            }
+        }
+
+        function updatePacman() {
+            const pm = gameState.pacman;
+            
+            // 尝试改变方向
+            if (pm.nextDirection !== 'none' && pm.nextDirection !== pm.direction) {
+                const gridX = Math.round(pm.x);
+                const gridY = Math.round(pm.y);
+                
+                if (Math.abs(pm.x - gridX) < 0.1 && 
+                    Math.abs(pm.y - gridY) < 0.1 &&
+                    canMove(gridX, gridY, pm.nextDirection)) {
+                    pm.direction = pm.nextDirection;
+                    pm.x = gridX;
+                    pm.y = gridY;
+                }
+            }
+            
+            // 移动吃豆人
+            if (pm.direction !== 'none') {
+                let newX = pm.x;
+                let newY = pm.y;
+                
+                const spd = CONFIG.pacmanSpeed * (gameState.pacman.speedBoost ? 2 : 1);
+                switch (pm.direction) {
+                    case 'left':  newX -= spd; break;
+                    case 'right': newX += spd; break;
+                    case 'up':    newY -= spd; break;
+                    case 'down':  newY += spd; break;
+                }
+                
+                // 检查是否到达格子中心
+                const nextGridX = Math.round(newX);
+                const nextGridY = Math.round(newY);
+                
+                // 检查前方是否有墙
+                if (!isWall(nextGridX, nextGridY)) {
+                    // 隧道传送：仅 y=10 行左右穿越
+                    if (Math.abs(pm.y - 10) < 0.6) {
+                        if (newX < -0.5) newX = CONFIG.gridWidth - 1;
+                        if (newX >= CONFIG.gridWidth - 0.5) newX = 0;
+                    }
+                    
+                    pm.x = newX;
+                    pm.y = newY;
+                } else {
+                    // 对齐到格子中心
+                    pm.x = Math.round(pm.x);
+                    pm.y = Math.round(pm.y);
+                }
+                
+                // 更新网格位置
+                pm.gridX = Math.round(pm.x);
+                pm.gridY = Math.round(pm.y);
+                
+                // 嘴巴动画
+                pm.mouthOpen += pm.mouthDir * 0.15;
+                if (pm.mouthOpen > 1 || pm.mouthOpen < 0) {
+                    pm.mouthDir *= -1;
+                }
+                
+                // 检查碰撞
+                checkCollisions();
+                
+            }
+        }
+
+        function checkCollisions() {
+            const pm = gameState.pacman;
+            const gridX = Math.round(pm.x);
+            const gridY = Math.round(pm.y);
+            const key = `${gridX},${gridY}`;
+
+            // O(1) 查找吃豆子
+            if (gameState.dotsMap.has(key)) {
+                gameState.dotsMap.delete(key);
+                gameState.dots = gameState.dots.filter(d => !(d.x === gridX && d.y === gridY));
+                gameState.score += gameState.doubleScore ? 20 : 10;
+                playEatDot();
+                updateStats();
+            }
+
+            // O(1) 查找能量豆
+            if (gameState.powerUpsMap.has(key)) {
+                const pu = gameState.powerUpsMap.get(key);
+                gameState.powerUpsMap.delete(key);
+                gameState.powerUps = gameState.powerUps.filter(p => !(p.x === gridX && p.y === gridY));
+                playEatPowerUp();
+                activatePowerUp(pu.type);
+            }
+
+            // 检查地图吃完：重置地图继续游戏（不再使用关卡系统）
+            if (gameState.dotsMap.size === 0 && gameState.powerUpsMap.size === 0) {
+                const keepScore = gameState.score;
+                const keepLives = gameState.lives;
+                initGame();
+                gameState.score = keepScore;
+                gameState.lives = keepLives;
+                updateStats();
+            }
+        }
+
+        function activatePowerUp(type) {
+            gameState.score += 50;
+            gameState.powerModeEndTime = Date.now() + gameState.powerModeDuration;
+
+            // 清除旧计时器
+            if (gameState.powerModeTimer) clearTimeout(gameState.powerModeTimer);
+            if (gameState.blinkTimer)     clearTimeout(gameState.blinkTimer);
+
+            // 随机选择三种效果之一
+            const effects = ['ghost', 'speed', 'double'];
+            const effect  = effects[Math.floor(Math.random() * effects.length)];
+            gameState.currentPowerEffect = effect;
+
+            // 先清除所有道具栏高亮，再点亮当前效果
+            ['ghost', 'speed', 'double'].forEach(e => {
+                const el = document.getElementById(`power-${e}`);
+                if (el) el.classList.remove('earned');
+            });
+            const element = document.getElementById(`power-${effect}`);
+            if (element) element.classList.add('earned');
+
+            // ── 效果1：幽灵冻结（原有）──
+            gameState.powerMode = true;
+            gameState.ghosts.forEach(ghost => { ghost.scared = true; ghost.blinking = false; });
+
+            // ── 效果2：速度提升 ──
+            if (effect === 'speed') {
+                gameState.pacman.speedBoost = true;
+                gameState.ghosts.forEach(g => { g.speed = CONFIG.ghostSpeed * 2; });
+            }
+
+            // ── 效果3：双倍分数 ──
+            if (effect === 'double') {
+                gameState.doubleScore = true;
+            }
+
+            // 显示进度条和标签
+            document.getElementById('powerModeBar').classList.add('active');
+            document.getElementById('powerModeLabel').classList.add('active');
+            document.getElementById('powerModeLabel').textContent =
+                effect === 'ghost'  ? t('powerGhost') :
+                effect === 'speed'  ? t('powerSpeed') : t('powerDouble');
+
+            // 快结束前 2 秒幽灵开始闪烁
+            gameState.blinkTimer = setTimeout(() => {
+                gameState.ghosts.forEach(ghost => { if (ghost.scared) ghost.blinking = true; });
+            }, gameState.powerModeDuration - 2000);
+
+            gameState.powerModeTimer = setTimeout(() => {
+                gameState.powerMode   = false;
+                gameState.doubleScore = false;
+                gameState.pacman.speedBoost = false;
+                gameState.ghosts.forEach(ghost => {
+                    ghost.scared   = false;
+                    ghost.blinking = false;
+                    ghost.speed    = CONFIG.ghostSpeed;
+                });
+                document.getElementById('powerModeBar').classList.remove('active');
+                document.getElementById('powerModeLabel').classList.remove('active');
+                document.getElementById('powerModeLabel').textContent = t('powerModeDefault');
+                gameState.currentPowerEffect = null;
+                if (element) element.classList.remove('earned');
+            }, gameState.powerModeDuration);
+
+            updateStats();
+        }
+
+        // 每帧更新进度条
+        function updatePowerModeBar() {
+            if (!gameState.powerMode) return;
+            const remaining = gameState.powerModeEndTime - Date.now();
+            const pct = Math.max(0, remaining / gameState.powerModeDuration * 100);
+            document.getElementById('powerModeBarFill').style.width = pct + '%';
+            // 快结束时进度条变红
+            document.getElementById('powerModeBarFill').style.background =
+                pct < 25 ? 'linear-gradient(90deg, #ff4444, #ff9900)' : 'linear-gradient(90deg, #00f0ff, #FFD700)';
+        }
+
+        // 在游戏画面上生成浮动得分文字
+        function spawnFloatingScore(x, y, text) {
+            const wrap = document.getElementById('gameCanvasWrap');
+            const canvas = document.getElementById('gameCanvas');
+            const scaleX = canvas.offsetWidth / canvas.width;
+            const scaleY = canvas.offsetHeight / canvas.height;
+
+            const el = document.createElement('div');
+            el.className = 'floating-score';
+            el.textContent = text;
+            el.style.left = (x * scaleX + canvas.offsetLeft) + 'px';
+            el.style.top  = (y * scaleY) + 'px';
+            wrap.appendChild(el);
+            setTimeout(() => el.remove(), 900);
+        }
+
+        function updateGhosts() {
+            const now = Date.now();
+            const gameElapsed = now - gameState.startTime;
+
+            gameState.ghosts.forEach(ghost => {
+                // 延迟释放：未到释放时间的幽灵停在原地
+                if (gameElapsed < ghost.releaseDelay) return;
+
+                const pm = gameState.pacman;
+                const spd = ghost.speed;
+
+                // 向当前方向移动
+                ghost.x += ghost.dir.dx * spd;
+                ghost.y += ghost.dir.dy * spd;
+
+                // 检查是否到达格中心
+                const cx = Math.round(ghost.x);
+                const cy = Math.round(ghost.y);
+                const atCenter = Math.abs(ghost.x - cx) < spd * 1.5 + 0.01 &&
+                                 Math.abs(ghost.y - cy) < spd * 1.5 + 0.01;
+
+                if (atCenter && !ghost._centered) {
+                    ghost._centered = true;
+                    ghost.x = cx;
+                    ghost.y = cy;
+
+                    // 可走方向（不含回头，除非死路）
+                    const fwd = [
+                        { dx: -1, dy:  0 },
+                        { dx:  1, dy:  0 },
+                        { dx:  0, dy: -1 },
+                        { dx:  0, dy:  1 }
+                    ].filter(d => {
+                        if (d.dx === -ghost.dir.dx && d.dy === -ghost.dir.dy) return false;
+                        const nx = cx + d.dx, ny = cy + d.dy;
+                        if (ny < 0 || ny >= CONFIG.gridHeight || nx < 0 || nx >= CONFIG.gridWidth) return false;
+                        return gameState.maze[ny][nx] !== 1;
+                    });
+
+                    const all = [
+                        { dx: -1, dy:  0 },
+                        { dx:  1, dy:  0 },
+                        { dx:  0, dy: -1 },
+                        { dx:  0, dy:  1 }
+                    ].filter(d => {
+                        const nx = cx + d.dx, ny = cy + d.dy;
+                        if (ny < 0 || ny >= CONFIG.gridHeight || nx < 0 || nx >= CONFIG.gridWidth) return false;
+                        return gameState.maze[ny][nx] !== 1;
+                    });
+
+                    const pool = fwd.length > 0 ? fwd : all;
+
+                    if (pool.length > 0) {
+                        if (ghost.scared) {
+                            ghost.dir = pool[Math.floor(Math.random() * pool.length)];
+                        } else {
+                            let best = pool[0], bestDist = Infinity;
+                            pool.forEach(d => {
+                                const dist = (cx + d.dx - pm.x) ** 2 + (cy + d.dy - pm.y) ** 2;
+                                if (dist < bestDist) { bestDist = dist; best = d; }
+                            });
+                            ghost.dir = best;
+                        }
+                    }
+
+                    // 立即迈出一步，防止下帧再次判定为"在中心"
+                    ghost.x += ghost.dir.dx * spd;
+                    ghost.y += ghost.dir.dy * spd;
+
+                } else if (!atCenter) {
+                    ghost._centered = false;
+                }
+
+                ghost.gridX = Math.round(ghost.x);
+                ghost.gridY = Math.round(ghost.y);
+
+                // 检查与吃豆人碰撞
+                const dist = Math.hypot(ghost.x - pm.x, ghost.y - pm.y);
+                if (dist < 0.8) {
+                    if (ghost.scared) {
+                        gameState.score += 200;
+                        playEatGhost();
+                        spawnFloatingScore(
+                            ghost.x * CONFIG.cellSize + CONFIG.cellSize / 2,
+                            ghost.y * CONFIG.cellSize,
+                            '+200'
+                        );
+                        ghost.scared = false;
+                        ghost.blinking = false;
+                        ghost.x = ghost.startX;
+                        ghost.y = ghost.startY;
+                        ghost.dir = { dx: 0, dy: -1 };
+                        ghost._centered = true;
+                        updateStats();
+                    } else {
+                        playDeath();
+                        gameState.pacman.x = 9;
+                        gameState.pacman.y = 16;
+                        gameState.pacman.direction = 'none';
+                        gameState.pacman.nextDirection = 'none';
+                        gameState.lives -= 1;
+                        gameState.ghosts.forEach(g => {
+                            g.x = g.startX;
+                            g.y = g.startY;
+                            g.scared = false;
+                            g.blinking = false;
+                            g.dir = { dx: 0, dy: -1 };
+                            g._centered = true;
+                        });
+                        gameState.accumYaw = 0;
+                        gameState.accumPitch = 0;
+                        gameState.lastControlTime = 0;
+                        gameState.lastAngles = { yaw: 0, pitch: 0, roll: 0 };
+                        gameState.headState = 'center';
+                        updateStats();
+                        if (gameState.lives <= 0) {
+                            gameOver();
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawGame() {
+            // 清空画布
+            gameCtx.fillStyle = '#000';
+            gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            const cellSize = CONFIG.cellSize;
+            
+            // 绘制迷宫墙壁
+            for (let y = 0; y < CONFIG.gridHeight; y++) {
+                for (let x = 0; x < CONFIG.gridWidth; x++) {
+                    if (gameState.maze[y][x] === 1) {
+                        gameCtx.fillStyle = '#2121de';
+                        gameCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        
+                        // 墙壁边框效果
+                        gameCtx.strokeStyle = '#5555ff';
+                        gameCtx.lineWidth = 1;
+                        gameCtx.strokeRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
+                    } else if (gameState.maze[y][x] === 4) {
+                        // 幽灵屋
+                        gameCtx.fillStyle = '#330033';
+                        gameCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // 绘制豆子
+            gameState.dots.forEach(dot => {
+                gameCtx.fillStyle = '#FFB897';
+                gameCtx.beginPath();
+                gameCtx.arc(
+                    dot.x * cellSize + cellSize / 2,
+                    dot.y * cellSize + cellSize / 2,
+                    cellSize / 6,
+                    0,
+                    Math.PI * 2
+                );
+                gameCtx.fill();
+            });
+            
+            // 绘制能量豆（闪烁动画）
+            const now_ms = Date.now();
+            const pulse = Math.sin(now_ms / 200) * 0.5 + 0.5; // 0~1 周期闪烁
+            gameState.powerUps.forEach(powerUp => {
+                const radius = (cellSize / 3) * (0.7 + pulse * 0.4);
+                gameCtx.save();
+                gameCtx.globalAlpha = 0.5 + pulse * 0.5;
+                // 外发光
+                gameCtx.shadowColor = '#FFD700';
+                gameCtx.shadowBlur = 10 + pulse * 8;
+                gameCtx.fillStyle = '#FFD700';
+                gameCtx.beginPath();
+                gameCtx.arc(
+                    powerUp.x * cellSize + cellSize / 2,
+                    powerUp.y * cellSize + cellSize / 2,
+                    radius,
+                    0,
+                    Math.PI * 2
+                );
+                gameCtx.fill();
+                gameCtx.restore();
+            });
+            
+            // 绘制吃豆人
+            const pm = gameState.pacman;
+            gameCtx.save();
+            if (gameState.powerMode) {
+                // 无敌时外发光 + 颜色在黄/青之间切换
+                const t = (Date.now() % 400) / 400;
+                const r = Math.round(255 * (1 - t * 0.3));
+                const g = Math.round(200 + 55 * t);
+                const b = Math.round(255 * t);
+                gameCtx.fillStyle = `rgb(${r},${g},${b})`;
+                gameCtx.shadowColor = `rgb(${r},${g},${b})`;
+                gameCtx.shadowBlur = 18;
+            } else {
+                gameCtx.fillStyle = '#FFD700';
+            }
+            gameCtx.beginPath();
+            
+            // 用旋转让嘴巴始终朝向行进方向
+            const cx = pm.x * cellSize + cellSize / 2;
+            const cy = pm.y * cellSize + cellSize / 2;
+            const mouthAngle = pm.mouthOpen * 0.3 * Math.PI; // 最大张开 54°
+
+            let faceRotation = 0; // 默认朝右
+            switch (pm.direction) {
+                case 'left':  faceRotation = Math.PI;       break;
+                case 'up':    faceRotation = -Math.PI / 2;  break;
+                case 'down':  faceRotation = Math.PI / 2;   break;
+            }
+
+            gameCtx.translate(cx, cy);
+            gameCtx.rotate(faceRotation);
+            gameCtx.arc(0, 0, cellSize / 2 - 2, mouthAngle, 2 * Math.PI - mouthAngle);
+            gameCtx.lineTo(0, 0);
+            gameCtx.fill();
+            gameCtx.restore();
+            
+            // 绘制幽灵
+            gameState.ghosts.forEach(ghost => {
+                let color = ghost.color;
+                if (ghost.scared) {
+                    if (ghost.blinking) {
+                        // 快结束：白蓝交替闪烁
+                        color = (Math.floor(Date.now() / 200) % 2 === 0) ? '#FFFFFF' : '#0000FF';
+                    } else {
+                        color = '#0000FF';
+                    }
+                }
+                gameCtx.fillStyle = color;
+                gameCtx.beginPath();
+                gameCtx.arc(
+                    ghost.x * cellSize + cellSize / 2,
+                    ghost.y * cellSize + cellSize / 2,
+                    cellSize / 2 - 2,
+                    Math.PI,
+                    0,
+                    false
+                );
+                gameCtx.lineTo(ghost.x * cellSize + cellSize, ghost.y * cellSize + cellSize);
+                
+                // 幽灵波浪底部
+                for (let i = 1; i <= 3; i++) {
+                    const wx = ghost.x * cellSize + (i * cellSize / 3);
+                    const wy = ghost.y * cellSize + cellSize + (i % 2 === 0 ? -3 : 0);
+                    gameCtx.lineTo(wx, wy);
+                }
+                
+                gameCtx.lineTo(ghost.x * cellSize, ghost.y * cellSize + cellSize);
+                gameCtx.fill();
+                
+                // 幽灵眼睛
+                gameCtx.fillStyle = ghost.scared ? '#FFFF00' : '#fff';
+                gameCtx.beginPath();
+                gameCtx.arc(ghost.x * cellSize + cellSize / 3, ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3, ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
+                gameCtx.fill();
+                
+                // 瞳孔
+                gameCtx.fillStyle = '#000';
+                gameCtx.beginPath();
+                gameCtx.arc(ghost.x * cellSize + cellSize / 3 + 1, ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3 + 1, ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
+                gameCtx.fill();
+            });
+        }
+
+        function gameLoop() {
+            if (!gameState.running) return;
+            
+            updatePacman();
+            updateGhosts();
+            updatePowerModeBar();
+            drawGame();
+            
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateStats() {
+            document.getElementById('score').textContent = gameState.score;
+            const hearts = Math.max(0, gameState.lives);
+            document.getElementById('lives').textContent = '❤️'.repeat(hearts) || '🖤';
+        }
+
+        function startTimer() {
+            if (timerIntervalId) clearInterval(timerIntervalId);
+            timerIntervalId = setInterval(() => {
+                if (!gameState.running) return;
+                
+                const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                
+                document.getElementById('playTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function gameOver() {
+            stopGame();
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('gameOverOverlay').classList.add('show');
+        }
+
+        async function restartGame() {
+            document.getElementById('gameOverOverlay').classList.remove('show');
+            resetGame();
+            await startGame();
+        }
+    </script>
+</body>
+</html>
