@@ -56,6 +56,7 @@
             padding: 6px 12px;
             font-size: 0.7em;
             cursor: pointer;
+            display: none;
         }
 
         .game-container {
@@ -138,6 +139,17 @@
             margin: 0 auto;
         }
 
+        #uiCanvas {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            pointer-events: auto;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -170,6 +182,11 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             position: relative;
+        }
+
+        /* Phase-1: HUD + Controls 已改为 Canvas 渲染 */
+        .stats-grid, .controls {
+            display: none;
         }
 
         button {
@@ -488,7 +505,8 @@
         <div class="right-panel">
             <div class="game-board">
                 <div id="gameCanvasWrap" style="position:relative; display:inline-block; width:100%;">
-                <canvas id="gameCanvas" width="380" height="400" style="background: #000; display: block; margin: 0 auto;"></canvas>
+                <canvas id="gameCanvas" width="380" height="464" style="background: #000; display: block; margin: 0 auto;"></canvas>
+                <canvas id="uiCanvas" width="380" height="464"></canvas>
                 </div>
             </div>
 
@@ -695,6 +713,27 @@
             currentLang = currentLang === 'zh' ? 'en' : 'zh';
             localStorage.setItem('pacman_lang', currentLang);
             applyI18n();
+            drawGame();
+        }
+
+        function getUiPointFromEvent(evt) {
+            const rect = uiCanvas.getBoundingClientRect();
+            const source = evt.touches ? evt.touches[0] : evt;
+            return {
+                x: ((source.clientX - rect.left) / rect.width) * uiCanvas.width,
+                y: ((source.clientY - rect.top) / rect.height) * uiCanvas.height
+            };
+        }
+
+        function onUiCanvasClick(evt) {
+            const p = getUiPointFromEvent(evt);
+            for (let i = uiHitRegions.length - 1; i >= 0; i--) {
+                const r = uiHitRegions[i];
+                if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+                    r.onClick();
+                    break;
+                }
+            }
         }
 
         // 游戏配置
@@ -705,6 +744,8 @@
             pacmanSpeed: 0.03,
             ghostSpeed: 0.015
         };
+        const UI_TOP_H = 44;
+        const UI_BOTTOM_H = 64;
 
         // 迷宫地图 (1=墙，0=豆子，2=空，3=能量豆，4=幽灵屋)
         const MAZE_TEMPLATE = [
@@ -781,9 +822,10 @@
             floatingTexts: []
         };
 
-        let video, canvas, ctx, gameCanvas, gameCtx;
+        let video, canvas, ctx, gameCanvas, gameCtx, uiCanvas, uiCtx;
         let animationId, gameLoopId, timerIntervalId;
         let modelsLoaded = false;
+        let uiHitRegions = [];
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -792,7 +834,14 @@
             ctx = canvas.getContext('2d');
             gameCanvas = document.getElementById('gameCanvas');
             gameCtx = gameCanvas.getContext('2d');
+            uiCanvas = document.getElementById('uiCanvas');
+            uiCtx = uiCanvas.getContext('2d');
             applyI18n();
+
+            // 迷宫区域固定 19x20 格（400px），底部额外留 64px 给 Canvas 按钮区
+            const mazeH = Math.round((gameCanvas.width / CONFIG.gridWidth) * CONFIG.gridHeight);
+            gameCanvas.height = mazeH + UI_TOP_H + UI_BOTTOM_H;
+            uiCanvas.height = mazeH + UI_TOP_H + UI_BOTTOM_H;
             
             // 动态计算单元格大小
             CONFIG.cellSize = gameCanvas.width / CONFIG.gridWidth;
@@ -804,6 +853,12 @@
             loadModels();
             initGame();
             drawGame(); // 初始绘制，让用户能看到游戏界面
+
+            uiCanvas.addEventListener('click', onUiCanvasClick);
+            uiCanvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                onUiCanvasClick(e);
+            }, { passive: false });
         });
 
         async function loadModels() {
@@ -1212,6 +1267,7 @@
             document.getElementById('stopBtn').disabled = true;
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGame();
         }
 
         function resetGame() {
@@ -1612,7 +1668,7 @@
             el.className = 'floating-score';
             el.textContent = text;
             el.style.left = (x * scaleX + canvas.offsetLeft) + 'px';
-            el.style.top  = (y * scaleY) + 'px';
+            el.style.top  = ((y + UI_TOP_H) * scaleY) + 'px';
             wrap.appendChild(el);
             setTimeout(() => el.remove(), 900);
         }
@@ -1746,22 +1802,23 @@
             gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             
             const cellSize = CONFIG.cellSize;
+            const baseY = UI_TOP_H;
             
             // 绘制迷宫墙壁
             for (let y = 0; y < CONFIG.gridHeight; y++) {
                 for (let x = 0; x < CONFIG.gridWidth; x++) {
                     if (gameState.maze[y][x] === 1) {
                         gameCtx.fillStyle = '#2121de';
-                        gameCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        gameCtx.fillRect(x * cellSize, baseY + y * cellSize, cellSize, cellSize);
                         
                         // 墙壁边框效果
                         gameCtx.strokeStyle = '#5555ff';
                         gameCtx.lineWidth = 1;
-                        gameCtx.strokeRect(x * cellSize + 2, y * cellSize + 2, cellSize - 4, cellSize - 4);
+                        gameCtx.strokeRect(x * cellSize + 2, baseY + y * cellSize + 2, cellSize - 4, cellSize - 4);
                     } else if (gameState.maze[y][x] === 4) {
                         // 幽灵屋
                         gameCtx.fillStyle = '#330033';
-                        gameCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        gameCtx.fillRect(x * cellSize, baseY + y * cellSize, cellSize, cellSize);
                     }
                 }
             }
@@ -1772,7 +1829,7 @@
                 gameCtx.beginPath();
                 gameCtx.arc(
                     dot.x * cellSize + cellSize / 2,
-                    dot.y * cellSize + cellSize / 2,
+                    baseY + dot.y * cellSize + cellSize / 2,
                     cellSize / 6,
                     0,
                     Math.PI * 2
@@ -1794,7 +1851,7 @@
                 gameCtx.beginPath();
                 gameCtx.arc(
                     powerUp.x * cellSize + cellSize / 2,
-                    powerUp.y * cellSize + cellSize / 2,
+                    baseY + powerUp.y * cellSize + cellSize / 2,
                     radius,
                     0,
                     Math.PI * 2
@@ -1822,7 +1879,7 @@
             
             // 用旋转让嘴巴始终朝向行进方向
             const cx = pm.x * cellSize + cellSize / 2;
-            const cy = pm.y * cellSize + cellSize / 2;
+            const cy = baseY + pm.y * cellSize + cellSize / 2;
             const mouthAngle = pm.mouthOpen * 0.3 * Math.PI; // 最大张开 54°
 
             let faceRotation = 0; // 默认朝右
@@ -1854,38 +1911,115 @@
                 gameCtx.beginPath();
                 gameCtx.arc(
                     ghost.x * cellSize + cellSize / 2,
-                    ghost.y * cellSize + cellSize / 2,
+                    baseY + ghost.y * cellSize + cellSize / 2,
                     cellSize / 2 - 2,
                     Math.PI,
                     0,
                     false
                 );
-                gameCtx.lineTo(ghost.x * cellSize + cellSize, ghost.y * cellSize + cellSize);
+                gameCtx.lineTo(ghost.x * cellSize + cellSize, baseY + ghost.y * cellSize + cellSize);
                 
                 // 幽灵波浪底部
                 for (let i = 1; i <= 3; i++) {
                     const wx = ghost.x * cellSize + (i * cellSize / 3);
-                    const wy = ghost.y * cellSize + cellSize + (i % 2 === 0 ? -3 : 0);
+                    const wy = baseY + ghost.y * cellSize + cellSize + (i % 2 === 0 ? -3 : 0);
                     gameCtx.lineTo(wx, wy);
                 }
                 
-                gameCtx.lineTo(ghost.x * cellSize, ghost.y * cellSize + cellSize);
+                gameCtx.lineTo(ghost.x * cellSize, baseY + ghost.y * cellSize + cellSize);
                 gameCtx.fill();
                 
                 // 幽灵眼睛
                 gameCtx.fillStyle = ghost.scared ? '#FFFF00' : '#fff';
                 gameCtx.beginPath();
-                gameCtx.arc(ghost.x * cellSize + cellSize / 3, ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
-                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3, ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + cellSize / 3, baseY + ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3, baseY + ghost.y * cellSize + cellSize / 2, cellSize / 8, 0, Math.PI * 2);
                 gameCtx.fill();
                 
                 // 瞳孔
                 gameCtx.fillStyle = '#000';
                 gameCtx.beginPath();
-                gameCtx.arc(ghost.x * cellSize + cellSize / 3 + 1, ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
-                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3 + 1, ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + cellSize / 3 + 1, baseY + ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
+                gameCtx.arc(ghost.x * cellSize + 2 * cellSize / 3 + 1, baseY + ghost.y * cellSize + cellSize / 2, cellSize / 16, 0, Math.PI * 2);
                 gameCtx.fill();
             });
+
+            drawCanvasHUD();
+        }
+
+        function roundedRectPath(c, x, y, w, h, r) {
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.lineTo(x + w - r, y);
+            c.quadraticCurveTo(x + w, y, x + w, y + r);
+            c.lineTo(x + w, y + h - r);
+            c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            c.lineTo(x + r, y + h);
+            c.quadraticCurveTo(x, y + h, x, y + h - r);
+            c.lineTo(x, y + r);
+            c.quadraticCurveTo(x, y, x + r, y);
+            c.closePath();
+        }
+
+        function drawCanvasButton(x, y, w, h, text, bg, border, disabled = false) {
+            uiCtx.save();
+            uiCtx.globalAlpha = disabled ? 0.45 : 1;
+            roundedRectPath(uiCtx, x, y, w, h, 8);
+            uiCtx.fillStyle = bg;
+            uiCtx.fill();
+            uiCtx.lineWidth = 2;
+            uiCtx.strokeStyle = border;
+            uiCtx.stroke();
+            uiCtx.fillStyle = '#fff';
+            uiCtx.font = 'bold 14px sans-serif';
+            uiCtx.textAlign = 'center';
+            uiCtx.textBaseline = 'middle';
+            uiCtx.fillText(text, x + w / 2, y + h / 2);
+            uiCtx.restore();
+        }
+
+        function drawCanvasHUD() {
+            if (!uiCtx || !uiCanvas) return;
+            uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+            uiHitRegions = [];
+
+            const W = uiCanvas.width;
+            const H = uiCanvas.height;
+            const hearts = '❤️'.repeat(Math.max(0, gameState.lives)) || '🖤';
+            const timeText = document.getElementById('playTime').textContent;
+
+            // Top HUD
+            uiCtx.fillStyle = 'rgba(0,0,0,0.60)';
+            uiCtx.fillRect(0, 0, W, UI_TOP_H);
+            const langBtn = { x: W - 62, y: 8, w: 52, h: 26 };
+            const timeRightX = langBtn.x - 8;
+
+            uiCtx.fillStyle = '#FFD700';
+            uiCtx.font = 'bold 13px sans-serif';
+            uiCtx.textAlign = 'left';
+            uiCtx.textBaseline = 'middle';
+            uiCtx.fillText(`${t('scoreLabel')} ${gameState.score}`, 10, 14);
+            uiCtx.fillText(`${t('livesLabel')} ${hearts}`, 10, 30);
+            uiCtx.textAlign = 'right';
+            uiCtx.fillText(`${t('timeLabel')} ${timeText}`, timeRightX, 22);
+
+            // Bottom control bar
+            uiCtx.fillStyle = 'rgba(0,0,0,0.58)';
+            uiCtx.fillRect(0, H - UI_BOTTOM_H, W, UI_BOTTOM_H);
+
+            const startBtn = { x: 10, y: H - UI_BOTTOM_H + 10, w: 150, h: 42 };
+            const stopBtn = { x: W - 160, y: H - UI_BOTTOM_H + 10, w: 150, h: 42 };
+
+            const startDisabled = gameState.running;
+            const stopDisabled = !gameState.running;
+
+            drawCanvasButton(startBtn.x, startBtn.y, startBtn.w, startBtn.h, t('start'), '#45a049', '#2e7d32', startDisabled);
+            drawCanvasButton(stopBtn.x, stopBtn.y, stopBtn.w, stopBtn.h, t('stop'), '#da190b', '#c62828', stopDisabled);
+            drawCanvasButton(langBtn.x, langBtn.y, langBtn.w, langBtn.h, currentLang === 'zh' ? 'EN' : '中', 'rgba(255,215,0,0.2)', '#FFD700');
+
+            if (!startDisabled) uiHitRegions.push({ ...startBtn, onClick: () => startGame() });
+            if (!stopDisabled) uiHitRegions.push({ ...stopBtn, onClick: () => stopGame() });
+            uiHitRegions.push({ ...langBtn, onClick: () => toggleLanguage() });
         }
 
         function gameLoop() {
