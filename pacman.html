@@ -185,9 +185,13 @@
             position: relative;
         }
 
-        /* Phase-1: HUD + Controls 已改为 Canvas 渲染 */
-        .stats-grid, .controls {
+        /* 统计卡片隐藏；开始/停止按钮保留在左侧摄像头下方 */
+        .stats-grid {
             display: none;
+        }
+
+        .controls {
+            margin-top: 10px;
         }
 
         button {
@@ -756,7 +760,7 @@
             ghostSpeed: 0.015
         };
         const UI_TOP_H = 44;
-        const UI_BOTTOM_H = 64;
+        const UI_BOTTOM_H = 0;
 
         // 迷宫地图 (1=墙，0=豆子，2=空，3=能量豆，4=幽灵屋)
         const MAZE_TEMPLATE = [
@@ -2030,22 +2034,8 @@
             uiCtx.textAlign = 'right';
             uiCtx.fillText(`${t('timeLabel')} ${timeText}`, timeRightX, 22);
 
-            // Bottom control bar
-            uiCtx.fillStyle = 'rgba(0,0,0,0.58)';
-            uiCtx.fillRect(0, H - UI_BOTTOM_H, W, UI_BOTTOM_H);
-
-            const startBtn = { x: 10, y: H - UI_BOTTOM_H + 10, w: 150, h: 42 };
-            const stopBtn = { x: W - 160, y: H - UI_BOTTOM_H + 10, w: 150, h: 42 };
-
-            const startDisabled = gameState.running;
-            const stopDisabled = !gameState.running;
-
-            drawCanvasButton(startBtn.x, startBtn.y, startBtn.w, startBtn.h, t('start'), '#45a049', '#2e7d32', startDisabled);
-            drawCanvasButton(stopBtn.x, stopBtn.y, stopBtn.w, stopBtn.h, t('stop'), '#da190b', '#c62828', stopDisabled);
             drawCanvasButton(langBtn.x, langBtn.y, langBtn.w, langBtn.h, currentLang === 'zh' ? 'EN' : '中', 'rgba(255,215,0,0.2)', '#FFD700');
 
-            if (!startDisabled) uiHitRegions.push({ ...startBtn, onClick: () => startGame() });
-            if (!stopDisabled) uiHitRegions.push({ ...stopBtn, onClick: () => stopGame() });
             uiHitRegions.push({ ...langBtn, onClick: () => toggleLanguage() });
         }
 
