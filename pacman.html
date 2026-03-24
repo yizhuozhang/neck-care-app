@@ -27,7 +27,8 @@
 
         header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-top: 12px;
+            margin-bottom: 0;
             width: 100%;
             max-width: 800px;
             position: relative;
@@ -451,15 +452,17 @@
             .stat-value { font-size: 1.25em; }
             .stat-label { font-size: 0.65em; }
         }
+
+        @media (orientation: landscape) and (max-height: 520px) {
+            body { padding: 6px; }
+            .game-container { gap: 8px; }
+            header { margin-top: 8px; }
+            header h1 { font-size: clamp(0.95em, 2.2vw, 1.2em); margin-bottom: 2px; }
+            header p { font-size: 0.68em; }
+        }
     </style>
 </head>
 <body>
-    <header>
-        <button class="lang-switch" id="langBtn" onclick="toggleLanguage()">EN</button>
-        <h1 id="titleText">🎮 吃豆人颈椎大冒险</h1>
-        <p id="subtitleText">用你的脸控制吃豆人，吃掉豆子，躲避幽灵！</p>
-    </header>
-
     <div class="game-container">
         <div class="left-panel">
             <div class="video-section">
@@ -539,6 +542,12 @@
         </div>
     </div>
 
+    <header>
+        <button class="lang-switch" id="langBtn" onclick="toggleLanguage()">EN</button>
+        <h1 id="titleText">🎮 吃豆人颈椎大冒险</h1>
+        <p id="subtitleText">用你的脸控制吃豆人，吃掉豆子，躲避幽灵！</p>
+    </header>
+
     <div class="alert-overlay" id="gameOverOverlay">
         <div class="alert-box">
             <h2 id="gameOverTitle">💀 游戏结束</h2>
@@ -558,7 +567,7 @@
             zh: {
                 pageTitle: '🎮 豆子迷宫颈椎大冒险',
                 title: '🎮 吃豆人颈椎大冒险',
-                subtitle: '用你的脸控制吃豆人，吃掉豆子，躲避幽灵！',
+                subtitle: '用你的脸控制吃豆人，吃掉豆子，躲避幽灵！手机请横屏',
                 start: '🎮 开始游戏',
                 stop: '⏹ 停止',
                 scoreLabel: '🍬 得分',
@@ -730,6 +739,8 @@
             for (let i = uiHitRegions.length - 1; i >= 0; i--) {
                 const r = uiHitRegions[i];
                 if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+                    // 尽早在用户手势中解锁音频，避免移动端无声
+                    unlockAudioFromGesture();
                     r.onClick();
                     break;
                 }
@@ -943,10 +954,24 @@
         let bgmNodes = [];   // 只存 BGM 节点，用于停止时断开
         let bgmPlaying = false;
         let bgmLoopTimer = null;
+        let audioUnlocked = false;
 
         function getAudioCtx() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             return audioCtx;
+        }
+
+        function unlockAudioFromGesture() {
+            const ctx = getAudioCtx();
+            if (ctx.state === 'suspended') {
+                // 不 await，避免打断点击处理链；失败由后续兜底重试
+                ctx.resume().catch(() => {});
+            }
+            if (audioUnlocked) return;
+            // 某些移动端需要一次实际发声才能真正解锁
+            const t = ctx.currentTime + 0.001;
+            playNote(ctx, 440, t, 0.01, 0.0001, 'sine', false);
+            audioUnlocked = true;
         }
 
         // 播放单个音符，isBgm=true 时才加入 bgmNodes（BGM专用）
@@ -1207,6 +1232,8 @@
         // ────────────────────────────────────────────────────────────
 
         async function startGame() {
+            // 兜底解锁：即便前面手势链路被打断，也尽量恢复音频
+            unlockAudioFromGesture();
             if (!modelsLoaded) {
                 alert(t('modelLoading'));
                 return;
