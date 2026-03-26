@@ -68,6 +68,58 @@
             max-width: 800px;
         }
 
+        /* 初始仅校准模式：只显示左侧摄像头与校准按钮 */
+        body.calibration-only .right-panel {
+            display: none;
+        }
+
+        body.calibration-only .left-panel {
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        body.calibration-only .controls {
+            grid-template-columns: 1fr;
+        }
+
+        body.calibration-only #stopBtn {
+            display: none;
+        }
+
+        /* 游戏态极简：仅保留黄色摄像头框和蓝色迷宫框 */
+        body.game-only header,
+        body.game-only .control-hint,
+        body.game-only .direction-indicator,
+        body.game-only .controls,
+        body.game-only .stats-grid,
+        body.game-only .power-ups,
+        body.game-only #uiCanvas,
+        body.game-only #langBtnMini {
+            display: none !important;
+        }
+
+        body.game-only .game-container {
+            flex-direction: column;
+            gap: 10px;
+            max-width: 440px;
+        }
+
+        body.game-only .left-panel,
+        body.game-only .right-panel {
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            backdrop-filter: none;
+        }
+
+        body.game-only .right-panel { order: 1; }
+        body.game-only .left-panel { order: 2; }
+
+        body.game-only .video-section,
+        body.game-only .game-board {
+            margin-bottom: 0;
+        }
+
         @media (min-width: 768px) {
             .game-container {
                 flex-direction: row;
@@ -85,6 +137,21 @@
         .video-section {
             position: relative;
             margin-bottom: 15px;
+        }
+
+        .lang-switch-mini {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            z-index: 30;
+            border: 2px solid #FFD700;
+            background: rgba(0, 0, 0, 0.45);
+            color: #FFD700;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 0.72em;
+            line-height: 1;
+            cursor: pointer;
         }
 
         .video-container {
@@ -131,6 +198,27 @@
             border-radius: 10px;
             padding: 10px;
             margin-bottom: 15px;
+        }
+
+        #livesDisplay {
+            display: none;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 35;
+            color: #FFD700;
+            font-size: 0.8em;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 215, 0, 0.7);
+            border-radius: 999px;
+            padding: 4px 10px;
+            line-height: 1.2;
+            pointer-events: none;
+        }
+
+        body.game-only #livesDisplay {
+            display: inline-block;
         }
 
         #gameCanvas {
@@ -470,23 +558,19 @@
     <div class="game-container">
         <div class="left-panel">
             <div class="video-section">
+                <button class="lang-switch-mini" id="langBtnMini" onclick="toggleLanguage()">EN</button>
                 <div class="video-container">
                     <video id="video" autoplay playsinline></video>
                     <canvas id="canvas"></canvas>
                 </div>
                 
                 <div class="control-hint">
-                    <p id="hintLeft">🎯 <strong>向左看</strong> → 吃豆人向左移动</p>
-                    <p id="hintRight">🎯 <strong>向右看</strong> → 吃豆人向右移动</p>
-                    <p id="hintUp">🎯 <strong>向上看</strong> → 吃豆人向上移动</p>
-                    <p id="hintDown">🎯 <strong>向下看</strong> → 吃豆人向下移动</p>
+                    <p id="hintLeft">🎯 <strong>头向左转</strong> → 吃豆人向左移动</p>
+                    <p id="hintRight">🎯 <strong>头向右转</strong> → 吃豆人向右移动</p>
+                    <p id="hintUp">🎯 <strong>头向上抬</strong> → 吃豆人向上移动</p>
+                    <p id="hintDown">🎯 <strong>头向下低</strong> → 吃豆人向下移动</p>
                 </div>
 
-                <div class="direction-indicator">
-                    <div class="dir-cell" id="dir-up">⬆️</div>
-                    <div class="dir-cell" id="dir-center">🎯</div>
-                    <div class="dir-cell" id="dir-down">⬇️</div>
-                </div>
             </div>
 
             <div class="controls">
@@ -512,6 +596,7 @@
         <div class="right-panel">
             <div class="game-board">
                 <div id="gameCanvasWrap" style="position:relative; display:inline-block; width:100%;">
+                <div id="livesDisplay">💖 生命 ❤️❤️❤️</div>
                 <canvas id="gameCanvas" width="380" height="464" style="background: #000; display: block; margin: 0 auto;"></canvas>
                 <canvas id="uiCanvas" width="380" height="464"></canvas>
                 </div>
@@ -571,16 +656,17 @@
             zh: {
                 pageTitle: '🎮 豆子迷宫颈椎大冒险',
                 title: '🎮 吃豆人颈椎大冒险',
-                subtitle: '用你的脸控制吃豆人，吃掉豆子，躲避幽灵！手机请横屏',
+                subtitle: '用你的脸控制吃豆人，吃掉豆子，躲避幽灵！',
+                startCalibration: '🎯 开始校准',
                 start: '🎮 开始游戏',
                 stop: '⏹ 停止',
                 scoreLabel: '🍬 得分',
                 livesLabel: '💖 生命',
                 timeLabel: '⏱ 游戏时间',
-                hintLeft: '🎯 <strong>向左看</strong> → 吃豆人向左移动',
-                hintRight: '🎯 <strong>向右看</strong> → 吃豆人向右移动',
-                hintUp: '🎯 <strong>向上看</strong> → 吃豆人向上移动',
-                hintDown: '🎯 <strong>向下看</strong> → 吃豆人向下移动',
+                hintLeft: '🎯 <strong>头向左转</strong> → 吃豆人向左移动',
+                hintRight: '🎯 <strong>头向右转</strong> → 吃豆人向右移动',
+                hintUp: '🎯 <strong>头向上抬</strong> → 吃豆人向上移动',
+                hintDown: '🎯 <strong>头向下低</strong> → 吃豆人向下移动',
                 powerupsTitle: '⚡ 能量道具',
                 powerModeDefault: '⚡ 无敌模式',
                 powerGhost: '👻 幽灵冻结',
@@ -628,15 +714,16 @@
                 pageTitle: '🎮 Pacman Neck Adventure',
                 title: '🎮 Pacman Neck Adventure',
                 subtitle: 'Control Pacman with your face: eat dots and avoid ghosts!',
+                startCalibration: '🎯 Start Calibration',
                 start: '🎮 Start',
                 stop: '⏹ Stop',
                 scoreLabel: '🍬 Score',
                 livesLabel: '💖 Lives',
                 timeLabel: '⏱ Time',
-                hintLeft: '🎯 <strong>Look Left</strong> → Move Left',
-                hintRight: '🎯 <strong>Look Right</strong> → Move Right',
-                hintUp: '🎯 <strong>Look Up</strong> → Move Up',
-                hintDown: '🎯 <strong>Look Down</strong> → Move Down',
+                hintLeft: '🎯 <strong>Turn Head Left</strong> → Move Left',
+                hintRight: '🎯 <strong>Turn Head Right</strong> → Move Right',
+                hintUp: '🎯 <strong>Raise Head Up</strong> → Move Up',
+                hintDown: '🎯 <strong>Lower Head Down</strong> → Move Down',
                 powerupsTitle: '⚡ Power-ups',
                 powerModeDefault: '⚡ Power Mode',
                 powerGhost: '👻 Ghost Freeze',
@@ -684,6 +771,9 @@
 
         let currentLang = localStorage.getItem('pacman_lang') || 'zh';
         if (!I18N[currentLang]) currentLang = 'zh';
+        let uiMode = 'calibration';
+        let calibrationDone = false;
+        let isStartingGame = false;
 
         function t(key) {
             return I18N[currentLang][key] || I18N.zh[key] || key;
@@ -693,9 +783,12 @@
             document.title = t('pageTitle');
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
             document.getElementById('langBtn').textContent = currentLang === 'zh' ? 'EN' : '中';
+            const langBtnMini = document.getElementById('langBtnMini');
+            if (langBtnMini) langBtnMini.textContent = currentLang === 'zh' ? 'EN' : '中';
             document.getElementById('titleText').textContent = t('title');
             document.getElementById('subtitleText').textContent = t('subtitle');
-            document.getElementById('startBtn').textContent = t('start');
+            document.getElementById('startBtn').textContent =
+                (!calibrationDone && uiMode === 'calibration') ? t('startCalibration') : t('start');
             document.getElementById('stopBtn').textContent = t('stop');
             document.getElementById('scoreLabel').textContent = t('scoreLabel');
             document.getElementById('livesLabel').textContent = t('livesLabel');
@@ -720,6 +813,14 @@
             document.getElementById('gameOverMsgLine1').textContent = t('gameOverLine1');
             document.getElementById('finalScoreLabel').textContent = t('finalScoreLabel');
             document.getElementById('restartBtn').textContent = t('restart');
+            updateStats();
+        }
+
+        function setInterfaceMode(mode) {
+            uiMode = mode;
+            document.body.classList.toggle('calibration-only', mode === 'calibration');
+            document.body.classList.toggle('game-only', mode === 'game');
+            applyI18n();
         }
 
         function toggleLanguage() {
@@ -851,7 +952,6 @@
             gameCtx = gameCanvas.getContext('2d');
             uiCanvas = document.getElementById('uiCanvas');
             uiCtx = uiCanvas.getContext('2d');
-            applyI18n();
 
             // 迷宫区域固定 19x20 格（400px），底部额外留 64px 给 Canvas 按钮区
             const mazeH = Math.round((gameCanvas.width / CONFIG.gridWidth) * CONFIG.gridHeight);
@@ -868,6 +968,7 @@
             loadModels();
             initGame();
             drawGame(); // 初始绘制，让用户能看到游戏界面
+            setInterfaceMode('calibration');
 
             uiCanvas.addEventListener('click', onUiCanvasClick);
             uiCanvas.addEventListener('touchstart', (e) => {
@@ -1236,32 +1337,40 @@
         // ────────────────────────────────────────────────────────────
 
         async function startGame() {
+            if (isStartingGame || gameState.running) return;
+            isStartingGame = true;
             // 兜底解锁：即便前面手势链路被打断，也尽量恢复音频
             unlockAudioFromGesture();
             if (!modelsLoaded) {
                 alert(t('modelLoading'));
+                isStartingGame = false;
                 return;
             }
 
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        facingMode: 'user'
-                    }
-                });
-                
-                video.srcObject = stream;
-                await new Promise(resolve => {
-                    video.onloadedmetadata = resolve;
-                });
-                
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+                const hasLiveStream = video.srcObject && video.srcObject.getTracks().some(track => track.readyState === 'live');
+                if (!hasLiveStream) {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 },
+                            facingMode: 'user'
+                        }
+                    });
+                    video.srcObject = stream;
+                    await new Promise(resolve => {
+                        video.onloadedmetadata = resolve;
+                    });
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                }
 
-                // 先做自适应校准，校准完毕再正式开始
-                await calibrate();
+                // 初次进入先校准，完成后再切到游戏界面
+                if (!calibrationDone) {
+                    await calibrate();
+                    calibrationDone = true;
+                    setInterfaceMode('game');
+                }
 
                 gameState.running = true;
                 gameState.startTime = Date.now();
@@ -1279,6 +1388,8 @@
             } catch (error) {
                 console.error('摄像头启动失败:', error);
                 alert(t('cameraFail'));
+            } finally {
+                isStartingGame = false;
             }
         }
 
@@ -1400,16 +1511,21 @@
         }
 
         function updateDirectionIndicator(angles) {
-            document.getElementById('dir-up').classList.remove('active');
-            document.getElementById('dir-down').classList.remove('active');
-            document.getElementById('dir-center').classList.remove('active');
+            const upEl = document.getElementById('dir-up');
+            const downEl = document.getElementById('dir-down');
+            const centerEl = document.getElementById('dir-center');
+            if (!upEl || !downEl || !centerEl) return;
+
+            upEl.classList.remove('active');
+            downEl.classList.remove('active');
+            centerEl.classList.remove('active');
             
             if (angles.pitch < -0.20) {
-                document.getElementById('dir-up').classList.add('active');
+                upEl.classList.add('active');
             } else if (angles.pitch > 0.20) {
-                document.getElementById('dir-down').classList.add('active');
+                downEl.classList.add('active');
             } else {
-                document.getElementById('dir-center').classList.add('active');
+                centerEl.classList.add('active');
             }
         }
 
@@ -2053,7 +2169,10 @@
         function updateStats() {
             document.getElementById('score').textContent = gameState.score;
             const hearts = Math.max(0, gameState.lives);
-            document.getElementById('lives').textContent = '❤️'.repeat(hearts) || '🖤';
+            const heartsText = '❤️'.repeat(hearts) || '🖤';
+            document.getElementById('lives').textContent = heartsText;
+            const livesDisplay = document.getElementById('livesDisplay');
+            if (livesDisplay) livesDisplay.textContent = `${t('livesLabel')} ${heartsText}`;
         }
 
         function startTimer() {
